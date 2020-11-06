@@ -1,15 +1,21 @@
 %%%%%%%%%%%%%%%%%PREPARING CORR DATA FOR ANALYSIS%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\';
+savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\Test\';
+if ~isfolder(savepath)
+    mkdir(savepath)
+end
+
 zonemode = 0;
 connectivity = 'CORR'; %Modify 'COH' OR 'CORR'
+xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
+exceltable = 'Participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
 
 %%%%%% from StatMatrices of LIONIRS toolbox%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Loading the data')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Load the excel file in array info%%
-xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\Subjectlist N=54.xlsx'; %Modify
+
 [filepath,name,ext] = fileparts([xlslistfile]);
 if strcmp(ext,'.xlsx') | strcmp(ext,'.xls')
     [raw, txt, info] = xlsread([xlslistfile]);
@@ -78,14 +84,14 @@ MATvarG2 = var(MATall(:,:,idG2),0,3,'omitnan');
 
 save([savepath 'workspacemat.mat'])
 
-clear ext raw txt iname names MAT matcorr id isubject idsubject groupid info xlslistfile filepath name zonemode ZONEid ZoneList labelnode MATstdG1 MATstdG1 MATvarG1 MATvarG2
+clear ext raw txt iname names MAT matcorr id isubject idsubject groupid info xlslistfile filepath name ZONEid ZoneList labelnode MATstdG1 MATstdG1 MATvarG1 MATvarG2
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Organizing the data')
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%Extraire les données démographiques%%%%%
-T = readtable('Participants list.xlsx'); %%%% Fichier excel avec les données démographiques d'intérêt
+T = readtable(exceltable);
 T.Properties.VariableNames{'GROUP_C_0_EXP_1_'} = 'GROUP'; %Renommer des variables
 T.Properties.VariableNames{'SEX_M_0_F_1_'} = 'SEX';
 
@@ -116,62 +122,66 @@ if isequal(connectivity,'COH') % créer des variables différente pour chaque va
     end
 end
 
-lgndroi = {'roiM','roiR','roiF','roiA'; 'm', 'r', 'f', 'a'}; %légende des différentes zones
-roiM = [zone.label; zone.plotLst]; %% extraire la zone des données de connectivité importées
-roiR = {'Cortex_prefrontal_ant_G','Cortex_prefrontal_dorsolat_G','Pars_triangularis_G',...
-    'Pars_opercularis_G','Cortex_premoteur_G','Cortex_moteur_prim_G','Cortex_sensorimoteur_prim_G',...
-    'Gyrus_supramarginal_G','Cortex_gustatif_G','Gyrus_temporal_sup_G','Gyrus_fusiforme_G',...
-    'Gyrus_temporal_med_G','Aire_temporopolaire_G','Cortex_prefrontal_ant_D','Cortex_prefrontal_dorsolat_D',...
-    'Pars_triangularis_D','Pars_opercularis_D','Cortex_premoteur_D','Cortex_moteur_prim_D',...
-    'Cortex_sensorimoteur_prim_D','Gyrus_supramarginal_D','Cortex_gustatif_D','Gyrus_temporal_sup_D',...
-    'Gyrus_fusiforme_D','Gyrus_temporal_med_D','Aire_temporopolaire_D'; 
-    23, [2 3 4 22], 5, 7, [1 8 11 12], [13 19], 21, [17 20], 10, 15, 18, [14 16], [6 9],...
-    46, [25 26 27 45], 28, 30, [24 41 42 43], [34 44], 36, [35, 40], 33, 38, 41, [37 39], [29, 32]}; %création manuelle d'une zone
-roiF = {'executif_G','moteur_G','somato_G','auditif_G','memoire_G','reguemo_G',...
-    'executif_D','moteur_D','somato_D','auditif_D','memoire_D','reguemo_D';
-    [2 3 4 5 7 22 23], [1 8 11 12 13 19], [10 17 20 21], 15, [14 16 18], [6 9],...
-    [25 26 27 28 30 45 46], [24 31 34 42 43 44], [33 35 36 40], 38, [37 39 41], [29 32]};
-roiA = {'prefrontal_G','frontal_G','parietal_G','temporal_G','prefrontal_D','frontal_D','parietal_D','temporal_D';
-    [2 3 4 5 7 22 23], [1 8 11 12 13 19], [10 17 20 21], [6 9 14 15 16 18],...
-    [25 26 27 28 30 45 46], [24 31 34 42 43 44], [33 35 36 40], [29 32 37 38 39 41]};
+if zonemode
+    lgndroi = {'roiM','roiR','roiF','roiA'; 'm', 'r', 'f', 'a'}; %légende des différentes zones
+    roiM = [zone.label; zone.plotLst]; %% extraire la zone des données de connectivité importées
+    roiR = {'Cortex_prefrontal_ant_G','Cortex_prefrontal_dorsolat_G','Pars_triangularis_G',...
+        'Pars_opercularis_G','Cortex_premoteur_G','Cortex_moteur_prim_G','Cortex_sensorimoteur_prim_G',...
+        'Gyrus_supramarginal_G','Cortex_gustatif_G','Gyrus_temporal_sup_G','Gyrus_fusiforme_G',...
+        'Gyrus_temporal_med_G','Aire_temporopolaire_G','Cortex_prefrontal_ant_D','Cortex_prefrontal_dorsolat_D',...
+        'Pars_triangularis_D','Pars_opercularis_D','Cortex_premoteur_D','Cortex_moteur_prim_D',...
+        'Cortex_sensorimoteur_prim_D','Gyrus_supramarginal_D','Cortex_gustatif_D','Gyrus_temporal_sup_D',...
+        'Gyrus_fusiforme_D','Gyrus_temporal_med_D','Aire_temporopolaire_D'; 
+        23, [2 3 4 22], 5, 7, [1 8 11 12], [13 19], 21, [17 20], 10, 15, 18, [14 16], [6 9],...
+        46, [25 26 27 45], 28, 30, [24 41 42 43], [34 44], 36, [35, 40], 33, 38, 41, [37 39], [29, 32]}; %création manuelle d'une zone
+    roiF = {'executif_G','moteur_G','somato_G','auditif_G','memoire_G','reguemo_G',...
+        'executif_D','moteur_D','somato_D','auditif_D','memoire_D','reguemo_D';
+        [2 3 4 5 7 22 23], [1 8 11 12 13 19], [10 17 20 21], 15, [14 16 18], [6 9],...
+        [25 26 27 28 30 45 46], [24 31 34 42 43 44], [33 35 36 40], 38, [37 39 41], [29 32]};
+    roiA = {'prefrontal_G','frontal_G','parietal_G','temporal_G','prefrontal_D','frontal_D','parietal_D','temporal_D';
+        [2 3 4 5 7 22 23], [1 8 11 12 13 19], [10 17 20 21], [6 9 14 15 16 18],...
+        [25 26 27 28 30 45 46], [24 31 34 42 43 44], [33 35 36 40], [29 32 37 38 39 41]};
 
-for R = 1:numel(lgndroi(1,:)) %%Créer une liste des labels de zones pour chaque moyennage différent
-    if R == 1
-        for r = 1:numel(roiM(1,:))
-            ListMroi{r} = [lgndroi{2,R} num2str(r)];
+    for R = 1:numel(lgndroi(1,:)) %%Créer une liste des labels de zones pour chaque moyennage différent
+        if R == 1
+            for r = 1:numel(roiM(1,:))
+                ListMroi{r} = [lgndroi{2,R} num2str(r)];
+            end
+        roiM = [roiM; ListMroi];
         end
-    roiM = [roiM; ListMroi];
+         if R == 2
+            for r = 1:numel(roiR(1,:))
+                ListRroi{r} = [lgndroi{2,R} num2str(r)];
+            end
+        roiR = [roiR; ListRroi];
+         end
+         if R == 3
+            for r = 1:numel(roiF(1,:))
+                ListFroi{r} = [lgndroi{2,R} num2str(r)];
+            end
+        roiF = [roiF; ListFroi];
+         end
+         if R == 4
+            for r = 1:numel(roiA(1,:))
+                ListAroi{r} = [lgndroi{2,R} num2str(r)];
+            end
+        roiA = [roiA; ListAroi];
+         end
     end
-     if R == 2
-        for r = 1:numel(roiR(1,:))
-            ListRroi{r} = [lgndroi{2,R} num2str(r)];
-        end
-    roiR = [roiR; ListRroi];
-     end
-     if R == 3
-        for r = 1:numel(roiF(1,:))
-            ListFroi{r} = [lgndroi{2,R} num2str(r)];
-        end
-    roiF = [roiF; ListFroi];
-     end
-     if R == 4
-        for r = 1:numel(roiA(1,:))
-            ListAroi{r} = [lgndroi{2,R} num2str(r)];
-        end
-    roiA = [roiA; ListAroi];
-     end
+    roi = {roiM, roiR, roiF, roiA}; %tout mettre dans la même variable
+
+    clear roiM roiR roiF roiA R r
 end
-roi = {roiM, roiR, roiF, roiA}; %tout mettre dans la même variable
 
-clear list_subject groupeall zone roiM roiR roiF roiA T tf R
-
+clear list_subject groupeall zone T tf
+    
 %PAR CHANNELS%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %création des variables de connectivité pour chaque paire de canaux%
 
 %création des labels de chaque paire de canaux
 x = 1; 
-for c = 1:46
-    for cc = (c + 1):46
+for c = 1:size(MATall,1)
+    for cc = (c + 1):size(MATall,1)
         labelch{x} = [num2str(c) '-' num2str(cc)];
         x = x + 1; 
     end
@@ -179,9 +189,9 @@ end
 labelch = string(labelch);
 
 %extraire les données des matrices initiales dans le nouveau format
-for p=1:54 
-    for c=1:46
-        for cc =(c + 1):46
+for p=1:size(MATall,3) 
+    for c=1:size(MATall,1)
+        for cc =(c + 1):size(MATall,1)
             x = [num2str(c) '-' num2str(cc)];
             tf = strcmp(x, labelch);
             idx = find(tf);
@@ -197,87 +207,89 @@ clear idx tf p c cc x;
 
 %PAR ROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%création des labels pour les paires de ROI%%%
-x = 1;
-for R = 1: numel(roi)
-    for r = 1:numel(roi{:,R}(1,:))
-        for rr = (r + 1):numel(roi{:,R}(1,:))
-            %labelroi{1,x} = {char(lgndroi(2,R)) num2str(r) '-' char(lgndroi(2,R)) num2str(rr)};
-            labelroi{1,R}{1,x} = [lgndroi{2,R} num2str(r) '-' lgndroi{2,R} num2str(rr)];
-            x = x + 1; 
-        end
-    end
+if zonemode
+    %création des labels pour les paires de ROI%%%
     x = 1;
-end
+    for R = 1: numel(roi)
+        for r = 1:numel(roi{:,R}(1,:))
+            for rr = (r + 1):numel(roi{:,R}(1,:))
+                %labelroi{1,x} = {char(lgndroi(2,R)) num2str(r) '-' char(lgndroi(2,R)) num2str(rr)};
+                labelroi{1,R}{1,x} = [lgndroi{2,R} num2str(r) '-' lgndroi{2,R} num2str(rr)];
+                x = x + 1; 
+            end
+        end
+        x = 1;
+    end
 
-%création de la liste des paires de channels pour chaque paire de ROI%%
-x = 1;
-y = 1;
-for R = 1:numel(roi) %1-4
-    for m = 1:numel(roi{:,R}(1,:)) %1-14
-        for n = (m + 1):numel(roi{:,R}(1,:)) %2-14
-            for r = 1:numel(roi{:,R}{2,m}) %1-5
-                for rr = 1:numel(roi{:,R}{2,n}) %1-2
-                    chroi{1,R}{1,x}(1,y) = join([num2str(roi{:,R}{2,m}(1,r)) "-" num2str(roi{:,R}{2,n}(1,rr))],"");
-                    y = y + 1;
+    %création de la liste des paires de channels pour chaque paire de ROI%%
+    x = 1;
+    y = 1;
+    for R = 1:numel(roi) %1-4
+        for m = 1:numel(roi{:,R}(1,:)) %1-14
+            for n = (m + 1):numel(roi{:,R}(1,:)) %2-14
+                for r = 1:numel(roi{:,R}{2,m}) %1-5
+                    for rr = 1:numel(roi{:,R}{2,n}) %1-2
+                        chroi{1,R}{1,x}(1,y) = join([num2str(roi{:,R}{2,m}(1,r)) "-" num2str(roi{:,R}{2,n}(1,rr))],"");
+                        y = y + 1;
+                    end
+                end
+            x = x + 1;
+            y = 1;
+            end
+        end
+        x = 1;
+    end
+
+    % Extraire les valeurs des données originales et les organiser par ROI
+    z = 1;
+    for p=1:54
+        for R = 1:numel(roi)
+            for r=1:46
+                for rr =(r + 1):46
+                    x = [num2str(r) '-' num2str(rr)];
+                    y = [num2str(rr) '-' num2str(r)];
+                    for n = 1:numel(chroi{1,R})
+                        tf = strcmp(x, chroi{1,R}{1,n});
+                        if any(tf)
+                            idx = find(tf);
+                            %   idx = strfind(labelch, x);
+                            roiALL{1,R}{p,n}(1,idx) = MATall(r,rr,p);
+                        end
+                        tf = strcmp(y, chroi{1,R}{1,n});
+                        if any(tf)
+                            idx = find(tf);
+                            %   idx = strfind(labelch, x);
+                            roiALL{1,R}{p,n}(1,idx) = MATall(r,rr,p);
+                        end
+                    end
                 end
             end
-        x = x + 1;
-        y = 1;
         end
     end
-    x = 1;
-end
 
-% Extraire les valeurs des données originales et les organiser par ROI
-z = 1;
-for p=1:54
+    %Extraire chaque colonne du cell array en matrice individuelle et faire la
+    %moyenne de la connectivité des canaux de chaque roi pour chaque participant
+
     for R = 1:numel(roi)
-        for r=1:46
-            for rr =(r + 1):46
-                x = [num2str(r) '-' num2str(rr)];
-                y = [num2str(rr) '-' num2str(r)];
-                for n = 1:numel(chroi{1,R})
-                    tf = strcmp(x, chroi{1,R}{1,n});
-                    if any(tf)
-                        idx = find(tf);
-                        %   idx = strfind(labelch, x);
-                        roiALL{1,R}{p,n}(1,idx) = MATall(r,rr,p);
-                    end
-                    tf = strcmp(y, chroi{1,R}{1,n});
-                    if any(tf)
-                        idx = find(tf);
-                        %   idx = strfind(labelch, x);
-                        roiALL{1,R}{p,n}(1,idx) = MATall(r,rr,p);
-                    end
-                end
-            end
+        for n = 1:numel(chroi{1,R})
+            A = cell2mat(roiALL{1,R}(:,n));
+            roimean = nanmean(A,2);
+            roiALLmean{1,R}(:,n) = roimean;
         end
     end
+
+    %mettre les données moyennées dans un tableau
+    tblmeanMroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,1}], 'VariableNames', string(labelroi{1,1}))]; 
+    tblmeanRroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,2}], 'VariableNames', string(labelroi{1,2}))];
+    tblmeanFroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,3}], 'VariableNames', string(labelroi{1,3}))];
+    tblmeanAroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,4}], 'VariableNames', string(labelroi{1,4}))];
+
+    clear idx tf p n m R r rr x y z A roimean roiALL;
+
+    save([savepath date '_datamat.mat'],'chALL','roiALLmean');
+    save([savepath date '_tables.mat'],'tblch','tblmeanMroi','tblmeanRroi','tblmeanFroi','tblmeanAroi');
 end
-
-%Extraire chaque colonne du cell array en matrice individuelle et faire la
-%moyenne de la connectivité des canaux de chaque roi pour chaque participant
-
-for R = 1:numel(roi)
-    for n = 1:numel(chroi{1,R})
-        A = cell2mat(roiALL{1,R}(:,n));
-        roimean = nanmean(A,2);
-        roiALLmean{1,R}(:,n) = roimean;
-    end
-end
-
-%mettre les données moyennées dans un tableau
-tblmeanMroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,1}], 'VariableNames', string(labelroi{1,1}))]; 
-tblmeanRroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,2}], 'VariableNames', string(labelroi{1,2}))];
-tblmeanFroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,3}], 'VariableNames', string(labelroi{1,3}))];
-tblmeanAroi = [table(part, gr, age, sex, ses) array2table([roiALLmean{1,4}], 'VariableNames', string(labelroi{1,4}))];
-
-clear idx tf p n m R r rr x y z A roimean roiALL;
-
-save([savepath date '_datamat.mat'],'chALL','roiALLmean');
-save([savepath date '_tables.mat'],'tblch','tblmeanMroi','tblmeanRroi','tblmeanFroi','tblmeanAroi');
-
+    
 %%
 %%Stats descriptives%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Descriptive Statistics')
@@ -340,21 +352,25 @@ for c = 1:size(MATall,1) %pour chaque canal
     end
    nanfreq{c,1} = nb; %liste du nb de fois ou chaque canal est manquant 
    nb = 0;
-   for n = 1:size(roi{1,R},2) %pour chaque roi
-       tf = roi{1,R}{2,n} == c; %trouver si le canal fait partie de la roi
-       if any(tf) %si oui
-           nanfreq{c,2} = roi{1,R}(1,n); %ajouter le label
+    if zonemode
+       for n = 1:size(roi{1,R},2) %pour chaque roi
+           tf = roi{1,R}{2,n} == c; %trouver si le canal fait partie de la roi
+           if any(tf) %si oui
+               nanfreq{c,2} = roi{1,R}(1,n); %ajouter le label
+           end
        end
    end
 end
 
-for n = 1:size(roi{1,R},2) % pour chaque roi
-    tf = strcmp(roi{1,R}(1,n),[nanfreq{:,2}]); %trouver chaque canal qui provient de chaque région
-    idx = find(tf); %trouver la position de chaque canal
-    nantot(n,1) = sum([nanfreq{idx,1}]); %faire la somme des canaux NAN de chaque région
+if zonemode
+    for n = 1:size(roi{1,R},2) % pour chaque roi
+        tf = strcmp(roi{1,R}(1,n),[nanfreq{:,2}]); %trouver chaque canal qui provient de chaque région
+        idx = find(tf); %trouver la position de chaque canal
+        nantot(n,1) = sum([nanfreq{idx,1}]); %faire la somme des canaux NAN de chaque région
+    end
+    nantot = num2cell(nantot);
+    nantot(:,2) = roi{1,R}(1,:);
 end
-nantot = num2cell(nantot);
-nantot(:,2) = roi{1,R}(1,:);
 
 [sortchnan,indexchnan] = sort(cell2mat(nanfreq(:,1)),'descend');
 mostnanch = sortchnan > 30/100*size(MATall,3); %30% ou plus de données manquantes
@@ -368,61 +384,67 @@ yline(mean(cell2mat(nanfreq(:,1)),1))
 ylabel('Total number of missing')
 title('Total number of missing channels')
 
-figure
-X = categorical(roi{1,R}(1,:));
-bar(X,cell2mat(nantot(:,1)))
-yline(mean(cell2mat(nantot(:,1)),1))
-ylabel('Total number of channels')
-title('Total number of channels with missing data in each region')
-
-clear R x p c n idx tf nanch tfnanch idxnanch nb sortchnan indexchnan mostnanch pbnanch nanfreq nantot
-
-%%%%%Roi%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%normalité et valeurs extrêmes%
-ALLroi = [];
-for R = 1:4
-    ALLroi = [ALLroi, roiALLmean{1,R}];
+if zonemode
+    figure
+    X = categorical(roi{1,R}(1,:));
+    bar(X,cell2mat(nantot(:,1)))
+    yline(mean(cell2mat(nantot(:,1)),1))
+    ylabel('Total number of channels')
+    title('Total number of channels with missing data in each region')
+    
+    clear nantot
 end
     
-    meanG1roi = nanmean(ALLroi(idG1,:));
-    meanG2roi = nanmean(ALLroi(idG2,:));
-    stdG1roi = nanstd(ALLroi(idG1,:));
-    stdG2roi = nanstd(ALLroi(idG2,:));
-    sknG1roi = skewness(ALLroi(idG1,:));
-    sknG2roi = skewness(ALLroi(idG2,:));
-    krtG1roi = kurtosis(ALLroi(idG1,:));
-    krtG2roi = kurtosis(ALLroi(idG2,:));
-tblgrmeanroi = [array2table([meanG1roi],'VariableNames',[labelroi{1,1:4}]); array2table([meanG2roi],'VariableNames',[labelroi{1,1:4}])];
-tblgrmeanroi.Properties.RowNames = {'G1','G2'};
-tbldescrroi = array2table([meanG1roi; meanG2roi; stdG1roi; stdG2roi; sknG1roi; sknG2roi; krtG1roi; krtG2roi],'VariableNames',[labelroi{1,1:4}],'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
+clear R x p c n idx tf nanch tfnanch idxnanch nb sortchnan indexchnan mostnanch pbnanch nanfreq
 
-tf = tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} >2 | tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} <-2;
-n_abnormal = sum(any(tf));
-p_abnormal = n_abnormal/numel(tbldescrroi(1,:))*100;
-fprintf('%.1f percent of the ROIs variables are not respecting the normal distribution\n',p_abnormal);
+%%%%%Roi%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if zonemode
+    %normalité et valeurs extrêmes%
+    ALLroi = [];
+    for R = 1:4
+        ALLroi = [ALLroi, roiALLmean{1,R}];
+    end
 
-zALLroi = nanzscore(ALLroi);
-tf = zALLroi > 3.29 | zALLroi <-3.29;
-n_extreme = sum(any(tf));
-p_extreme = n_extreme/numel(zALLroi)*100;
-fprintf('%.1f percent of the ROIs variables have extreme values\n',p_extreme);
+        meanG1roi = nanmean(ALLroi(idG1,:));
+        meanG2roi = nanmean(ALLroi(idG2,:));
+        stdG1roi = nanstd(ALLroi(idG1,:));
+        stdG2roi = nanstd(ALLroi(idG2,:));
+        sknG1roi = skewness(ALLroi(idG1,:));
+        sknG2roi = skewness(ALLroi(idG2,:));
+        krtG1roi = kurtosis(ALLroi(idG1,:));
+        krtG2roi = kurtosis(ALLroi(idG2,:));
+    tblgrmeanroi = [array2table([meanG1roi],'VariableNames',[labelroi{1,1:4}]); array2table([meanG2roi],'VariableNames',[labelroi{1,1:4}])];
+    tblgrmeanroi.Properties.RowNames = {'G1','G2'};
+    tbldescrroi = array2table([meanG1roi; meanG2roi; stdG1roi; stdG2roi; sknG1roi; sknG2roi; krtG1roi; krtG2roi],'VariableNames',[labelroi{1,1:4}],'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
 
-meanG1Mroi = nanmean(roiALLmean{1,1}(idG1,:));
-meanG2Mroi = nanmean(roiALLmean{1,1}(idG2,:));
-meanG1Rroi = nanmean(roiALLmean{1,2}(idG1,:));
-meanG2Rroi = nanmean(roiALLmean{1,2}(idG2,:));
-meanG1Froi = nanmean(roiALLmean{1,3}(idG1,:));
-meanG2Froi = nanmean(roiALLmean{1,3}(idG2,:));
-meanG1Aroi = nanmean(roiALLmean{1,4}(idG1,:));
-meanG2Aroi = nanmean(roiALLmean{1,4}(idG2,:));
+    tf = tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} >2 | tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} <-2;
+    n_abnormal = sum(any(tf));
+    p_abnormal = n_abnormal/numel(tbldescrroi(1,:))*100;
+    fprintf('%.1f percent of the ROIs variables are not respecting the normal distribution\n',p_abnormal);
 
-clear X tf R ALLroi n_abnormal n_extreme p_abnormal p_extreme stdG1ch stdG2ch sknG1ch sknG2ch krtG1ch krtG2ch meanG1roi meanG2roi stdG1roi stdG2roi sknG1roi sknG2roi krtG1roi krtG2roi zchALL zroiALLmean zALLroi
+    zALLroi = nanzscore(ALLroi);
+    tf = zALLroi > 3.29 | zALLroi <-3.29;
+    n_extreme = sum(any(tf));
+    p_extreme = n_extreme/numel(zALLroi)*100;
+    fprintf('%.1f percent of the ROIs variables have extreme values\n',p_extreme);
 
+    meanG1Mroi = nanmean(roiALLmean{1,1}(idG1,:));
+    meanG2Mroi = nanmean(roiALLmean{1,1}(idG2,:));
+    meanG1Rroi = nanmean(roiALLmean{1,2}(idG1,:));
+    meanG2Rroi = nanmean(roiALLmean{1,2}(idG2,:));
+    meanG1Froi = nanmean(roiALLmean{1,3}(idG1,:));
+    meanG2Froi = nanmean(roiALLmean{1,3}(idG2,:));
+    meanG1Aroi = nanmean(roiALLmean{1,4}(idG1,:));
+    meanG2Aroi = nanmean(roiALLmean{1,4}(idG2,:));
+
+    clear X tf R ALLroi n_abnormal n_extreme p_abnormal p_extreme stdG1ch stdG2ch sknG1ch sknG2ch krtG1ch krtG2ch meanG1roi meanG2roi stdG1roi stdG2roi sknG1roi sknG2roi krtG1roi krtG2roi zchALL zroiALLmean zALLroi
+end
+    
 save([savepath 'workspace.mat'])
 
 X = ['Results saved in ', savepath];
 disp(X)
 
-clear all
+%clear all
 
 toc
