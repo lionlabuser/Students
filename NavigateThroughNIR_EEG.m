@@ -1,7 +1,7 @@
 %infos and code taken from CurrentSetPath2018\spm12\toolbox\LIONirs\nirs_run_E_extractcomponent.m
 %from lines 893 (GLM part of the function)
 
-NIRSdirectory='C:\Data\data_NIRS\ELAN\ANALYSED\Martine_0m\BB048\Segment'; 
+NIRSdirectory='C:\Data\data_NIRS\ELAN\ANALYSED\Martine_0m\BB048\Segment\NormV2\dCONC\AL'; 
             %CHANGE HERE according to your NIRS.mat directory
 
 %download NIRS.mat structure            
@@ -61,6 +61,9 @@ numberAUX1files=length(AUX1files); %here you have the total number of files
 AUX1time_start=cell2mat(NIRS.Dt.AUX(1).pp(end).sync_timesec); %the syncrhonisation time
 %in seconds from the AUX file (eg. eeg) that has been previously
 %synchronized from the segmentation step.
+%NOTE: the sync_timesec refers to timepoint in seconds in the AUX that is
+%SYNCED to the start of the NIRS block (and not the time synced to the
+%trigger!)
 
 AUX1time_stop=AUX1time_start+timeSECaxe(end); %to calculate the <end time>
 %for the EEg data to be downloaded (based on the length of the bock
