@@ -1,4 +1,4 @@
-function [filteredD,globalComp,individualComp]=spatialsmoothingPCA(D,zonefile,Visualize,kernel)
+function [filteredD,globalComp,individualComp]=spatialsmoothingPCA(D,NC,zonefile,Visualize,kernel)
 % SCRIPT based on the article from Noah et al. 2021 (https://doi.org/10.1117/1.NPh.8.1.015004)
 % & Zhang et al. 2016 (https://doi.org/10.1117/1.NPh.3.1.015004)
 %
@@ -10,14 +10,27 @@ function [filteredD,globalComp,individualComp]=spatialsmoothingPCA(D,zonefile,Vi
 %       dimensions to fit the time x channel dimensions.
 %
 %      *zonefile - string or character array, 
-%   Visualize - [1 or 0] to visualize the relationship between the multiplication factor (kernel) and the distance between channels
 %
+%   (optional)
+%       Visualize - [1 or 0] to visualize the relationship between the multiplication factor (kernel) and the distance between channels
+%
+%       kernel - the size of the kernel (in degree or radian). 
+%               smoothing kernel set to 46 deg (or 0.8 rad) - Zhang et al 2017 
+%               (https://doi.org/10.1117/1.NPh.4.4.041409)
+%               as our distances between channels are all in centimeters, we 
+%               need to convert the kernel (in degrees) into cm (arc length)
+%               kernel needs to be in radians (between 0 and 2pi)
 %
 % OUTPUTS
 %
 %
 %
-
+if nargin <3
+    Visualize=0;
+    if nargin <4
+        kernel=0.8;
+    end
+end
 
 %% Calculate channel distance
 load( zonefile ,'-mat'); %zone file
@@ -104,22 +117,20 @@ end
 %(SmoothSpatialSig(:,vv)./sum(SmoothSpatialSig(:,vv))).*sum(SpatialSig(:,vv)); %TEST3 NORMALISATION 
 
 globalComp=TemporalSig*ComponentWeigth*SmoothSpatialSig';
+filteredD=D-globalComp;
+
 for vv=1:size(SpatialSig,2) 
 individualComp(:,:,vv)=TemporalSig(:,vv)*ComponentWeigth(vv,vv)*SmoothSpatialSig(:,vv)';
 end
+
 figure
 subplot(3,1,1)
-plot(data)
+plot(D)
 title('Original data')
 subplot(3,1,2)
 plot(globalComp)
 title('Global component')
 subplot(3,1,3)
-plot(data-globalComp)
+plot(D-globalComp)
 title('Derived neuronal component')
-
-
-
-lstSV = 1;
-Xm =  TemporalSig(:,lstSV)*ComponentWeigth(lstSV,lstSV)*SpatialSig(:,lstSV)';
-XmeanSD = Xm(:,1)-mean(Xm(:,1));
+end
