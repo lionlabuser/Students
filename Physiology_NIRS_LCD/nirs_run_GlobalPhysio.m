@@ -3,7 +3,7 @@ function out = nirs_run_GlobalPhysio(job)
 %   - job.NIRSmat = {'path +  NIRS.mat'}
 %   - job.physzone = {'path + filename + .zone'} %%NOTE REGARDING THE ZONE
 %   FILE: IT CAN CONTAIN EITHER ALL HBO AND HBR CHANNELS OR ONLY HBO
-%   CHANNELS. BOTH WORK. BUT IN JULIE'S SCRIPTS, CAREFUL TO ONLY PUT HBO
+%   CHANNELS. BOTH WORK IN THE CURRENT SCRIPT. BUT IN JULIE'S SCRIPTS, CAREFUL TO ONLY PUT HBO
 %   CHANNELS IN THE ZONE FILES
 %   - job.multimodalPATH={'path that ends with global'}
 %   - job.trig = [2 3 4] trigger or triggers related to the task. if
@@ -57,11 +57,15 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     fs = NIRS.Cf.dev.fs; %NIRS sampling rate
     wl=NIRS.Cf.H.C.wl';
     %nbchminimum = 5/100; %0.05;             %en pourcentage
+    if isfield(job,'nbtimeminimum')
+        nbtimeminimum=job.nbtimeminimum;
+    else
     nbtimeminimum=10/40; %the % time non artifacted to be considered as a good channel
+    end
     load(job.physzone{filenb}   ,'-mat');
     
-    if ~contains(job.multimodalPATH{filenb}(end),'\')
-        job.multimodalPATH{filenb}(end+1)='\';
+    if ~contains(job.multimodalPATH{filenb}(end),filesep)
+        job.multimodalPATH{filenb}(end+1)=filesep;
     end
     if ~exist(job.multimodalPATH{filenb},'dir')
         mkdir(job.multimodalPATH{filenb});
@@ -102,21 +106,21 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     if numel(RegZone)>1
         error('More than 1 regressor zone. Script made for global Physio.\n')
     end
-    for iR = 1:numel(RegZone)
-        tmp = upper(zone.label{RegZone(iR)});
-        zoneidentification = tmp(10:end);
-        for iz = 1:numel(zone.label)
-            tmpzone = upper(zone.label{iz});
-            if strcmp( strtrim(zoneidentification), strtrim(tmpzone))
-                ChanZone = [ChanZone,iz];
-            end
-        end
-    end
-    
-    if numel(ChanZone) ~= numel(RegZone)
-        msgbox('Regressor Zone and Zone must be in equal number in the zone list')
-        return
-    end
+%     for iR = 1:numel(RegZone)
+%         tmp = upper(zone.label{RegZone(iR)});
+%         zoneidentification = tmp(10:end);
+%         for iz = 1:numel(zone.label)
+%             tmpzone = upper(zone.label{iz});
+%             if strcmp( strtrim(zoneidentification), strtrim(tmpzone))
+%                 ChanZone = [ChanZone,iz];
+%             end
+%         end
+%     end
+%     
+%     if numel(ChanZone) ~= numel(RegZone)
+%         msgbox('Regressor Zone and Zone must be in equal number in the zone list')
+%         return
+%     end
     
     for f = 1:size(rDtp,1)
         d = fopen_NIR(rDtp{f,1},NC)';
@@ -378,7 +382,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                 tmpXm(tstart:tstop,1:NC)=nan;
                 tmpXcorr(tstart:tstop,1:NC)=nan;
                 for CH = 1:numel(CHhbo)
-                    tmpbeta(CHhbo(CH)) = dot(AUX.data(:,c),data(:,CH))/dot(AUX.data(:,c),AUX.data(:,c));
+                    tmpbeta(CHhbo(CH)) = dot(AUX.data(:,1),data(:,CH))/dot(AUX.data(:,1),AUX.data(:,1));
                     tmpXm(:,CHhbo(CH)) =globalComp(:,CH);
                     tmpXcorr(:,CHhbo(CH)) =filteredD(:,CH);
                     %tmpXm(:,CHhbo(CH)) = tmpbeta(CHhbo(CH)).* AUX.data(:,c);
@@ -504,10 +508,20 @@ for ci=1:size(SpatialSig,1) %for each channel (row)
             wij(ci,cj)=exp((-(Dist(ci,cj))^2)/(2*ksigma^2)); %calculate the multiplication factor based on the distance between channels ci and cj
             %lorsque ci==cj >> wij = 1
         end
+        %wij(ci,:)=wij(ci,:)./sum(wij(ci,:)); %TEST1 
+        %   NORMALISATION normalized the sum of multiplication factors to
+        %   1. FOR EACH CHANNEL, the sum of its multiplication factors
+        %   equals 1. For channels that have a lot of neighbors, it makes
+        %   that the weigth of the current channel is smaller compared to
+        %   the total weigth. For channels that have fewer neighbors,
+        %   their own weigth is larger in proportion to the total.
+
 end
 wij=(wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN. 
 % the sum of each column is approx equal to the sum of each column from the
 % initial SpatialSig matrice.
+% It takes the WHOLE MATRICE to do the normalization. therefore the sum of
+% weigths for each channel is not necessarily 1 (the mean sum across channels = 1)
 
 for vv=1:size(SpatialSig,2) %for each component (column)
         for ci=1:size(SpatialSig,1) %for each channel (row)
