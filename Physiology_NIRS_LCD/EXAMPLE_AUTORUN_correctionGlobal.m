@@ -3,6 +3,7 @@
 
 AUXPHYSIOLOGY=1; %if you dont want, put 0
 GLOBALPHYSIOLOGY=1; %if you dont want, put 0
+WHOLEsPCA=1; %if you dont want, put 0
 VIEWplotGLOBALphys=1; %if you dont want, put 0
 
 paths={'C:\Data\ELAN\Martine_0m\BB016\Segment\NormV2\Test2021\'};
@@ -31,6 +32,10 @@ jobG.globalavg = 0; %for nirs_run_GlobalPhysio
 jobG.globalpca = 0; %for nirs_run_GlobalPhysio
 jobG.spatialpca = 1; %for nirs_run_GlobalPhysio
 jobG.e_NIRSmatdirnewbranch='SpatialPCA';%name of the new branch to create
+
+%------------- parameters for WHOLEsPCA
+jobW.goodPercent = 0.5;
+jobW.e_NIRSmatdirnewbranch='SpatialPCA';%name of the new branch to create
 
 %------------- parameters for VIEWplotGLOBALphys
 PhysioLabels4FIGURES={'SatResp' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
@@ -89,6 +94,31 @@ for p=1:length(paths) %for each dataset. multiple paths can be enter in the path
         directory=fileparts(jobG2.NIRSmat{1});
         delete([directory filesep 'SelectedFactors.mat'])
         clear job*
+    end
+    
+     if WHOLEsPCA==1
+        
+        %% run SpatialPCA based on NAN segmentation + extract regressed data
+        
+        jobW.physzone = {zoneFile{p}};
+        jobW.NIRSmat = {[tempdirectory 'NIRS.mat']};
+        
+        nirs_run_NANsegmentSpatialPCA(jobW) %run script
+        
+        %% new branch + save corrected data
+        %create new branch
+        jobW.m_newbranchcomponent=1;
+        jobW2=nirs_run_NIRSmatcreatenewbranch(jobW);%run script
+        
+        %overwrite nirs data with the corrected data
+        jobW2.globalmethod=jobW.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
+        jobW2.DelPreviousData=0;
+        nirs_writeNIR_aftercorr(jobW2);
+        
+        %suppress SelectedFactors.mat file in the new directory
+        directory=fileparts(jobW2.NIRSmat{1});
+        delete([directory filesep 'SelectedFactors.mat'])
+        %clear job*
     end
     
     if VIEWplotGLOBALphys==1
