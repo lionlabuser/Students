@@ -90,6 +90,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
             else
                 for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p)
                     nameAUX=NIRS.Dt.AUX(iAUX).pp(end).p{i};
+                     moduleaux = numel(NIRS.Dt.AUX(iAUX).pp);
                     try
                         tstart=NIRS.Dt.AUX(iAUX).pp(end).sync_timesec{i};
                     catch
@@ -173,13 +174,13 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         if ~isempty(nirsind_dur_ch)&&  interpolate == 1
                             %eventbadstartstop = [idstart,idstop]
                             for sizebad = 1:size(eventbadstartstop,1)
-                                dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1)-2)+1;
-                                y1=rstmp((eventbadstartstop(sizebad,1)-2));
+                                dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1))+1;
+                                y1=rstmp((eventbadstartstop(sizebad,1)));
                                 y2=rstmp(eventbadstartstop(sizebad,2));
-                                interval = (eventbadstartstop(sizebad,1)-2):eventbadstartstop(sizebad,2);
+                                interval = (eventbadstartstop(sizebad,1)):eventbadstartstop(sizebad,2);
                                 %y = ax + b
                                 a = (y2-y1)/dur;
-                                b = y1 - a*(eventbadstartstop(sizebad,1)-2);
+                                b = y1 - a*(eventbadstartstop(sizebad,1));
                                 interp = a.*interval + b;
                                 rstmp(interval) = interp;
                             end
@@ -262,8 +263,8 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     fileoutAUX=[cPATH filesep outAUXfolder filesep cFILE 'b' num2str(i) cEXT];
                     fwrite_EEG(fileoutAUX,AUXupdate,1,AUXupdate.infoBV.DataPoints );
                     disp(fileoutAUX)
-                    NIRS.Dt.AUX(newAUX).pp.p{i,1}=fileoutAUX;
-                    NIRS.Dt.AUX(newAUX).pp.sync_timesec{i,1}=0;
+                    NIRS.Dt.AUX(newAUX).pp(moduleaux).p{i,1}=fileoutAUX;
+                    NIRS.Dt.AUX(newAUX).pp(moduleaux).sync_timesec{i,1}=0;
                 end
                 NIRS.Dt.AUX(newAUX).label = ['fil' NIRS.Dt.AUX(iAUX).label ];
                 
