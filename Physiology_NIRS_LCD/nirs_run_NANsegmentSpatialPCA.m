@@ -186,7 +186,7 @@ for ci=1:size(SpatialSig,1) %for each channel (row)
         wij(ci,cj)=exp((-(Dist(ci,cj))^2)/(2*ksigma^2)); %calculate the multiplication factor based on the distance between channels ci and cj
         %lorsque ci==cj >> wij = 1
     end
-    %wij(ci,:)=wij(ci,:)./sum(wij(ci,:)); %TEST1
+    wij(ci,:)=wij(ci,:)./sum(wij(ci,:)); %TEST1
     %   NORMALISATION normalized the sum of multiplication factors to
     %   1. FOR EACH CHANNEL, the sum of its multiplication factors
     %   equals 1. For channels that have a lot of neighbors, it makes
@@ -195,7 +195,7 @@ for ci=1:size(SpatialSig,1) %for each channel (row)
     %   their own weigth is larger in proportion to the total.
     
 end
-wij=(wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN.
+%wij=(wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN.
 % the sum of each column is approx equal to the sum of each column from the
 % initial SpatialSig matrice.
 % It takes the WHOLE MATRICE to do the normalization. therefore the sum of
