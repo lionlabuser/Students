@@ -6,7 +6,8 @@ GLOBALPHYSIOLOGY=1; %if you dont want, put 0
 WHOLEsPCA=1; %if you dont want, put 0
 VIEWplotGLOBALphys=1; %if you dont want, put 0
 
-paths={'C:\Data\ELAN\Martine_0m\BB016\Segment\NormV2\Test2021\'};
+paths={'C:\Data\data_NIRS\ELAN\ANALYSED\Martine_0m\BB016\Test2021\segment\withInterpolate\'...
+    'C:\Data\data_NIRS\ELAN\ANALYSED\Martine_0m\BB016\Test2021\segment\WithoutInterpolate\'};
 multimodalDirectory= {'C:\Data\ELAN\Martine_0m\Multimodal\BB016\'};
 zoneFile ={'C:\Data\ELAN\Martine_0m\BB016\GlobalZoneHBO.zone'};
 
@@ -23,7 +24,7 @@ zoneFile ={'C:\Data\ELAN\Martine_0m\BB016\GlobalZoneHBO.zone'};
 % ------------ parameters to adjust for AUXPHYSIOLOGY
 jobA.outAUXfolder='filAUX'; %for nirs_run_filterAUX
 jobA.copynirs=1; %for nirs_run_filterAUX
-jobA.covariables='Sat,Resp'; %for nirs_run_GLM_regressAUX
+jobA.Covariables='Sat,Resp'; %for nirs_run_GLM_regressAUX
 jobA.e_NIRSmatdirnewbranch='SatResp'; %name of the new branch to create
 
 %------------- parameters for GLOBALPHYSIOLOGY
@@ -86,7 +87,7 @@ for p=1:length(paths) %for each dataset. multiple paths can be enter in the path
         jobG2=nirs_run_NIRSmatcreatenewbranch(jobG);%run script
         
         %overwrite nirs data with the corrected data
-        jobG2.globalmethod=jobA.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
+        jobG2.globalmethod=jobG.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
         jobG2.DelPreviousData=0;
         nirs_writeNIR_aftercorr(jobG2);
         
@@ -179,8 +180,9 @@ for p=1:length(paths) %for each dataset. multiple paths can be enter in the path
             title(figg,['Block ' num2str(PARCOMP(tr).file) ])
             saveas(figg,[tempdirectory 'GC_figure\HBO_B' num2str(PARCOMP(tr).file) '.fig'])
             saveas(figg,[tempdirectory 'GC_figure\HBO_B'  num2str(PARCOMP(tr).file) '.png'])
-            
+             close
             clear figg yy
+           
             
         end
     end

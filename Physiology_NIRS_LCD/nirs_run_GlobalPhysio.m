@@ -67,8 +67,10 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     if ~contains(job.multimodalPATH{filenb}(end),filesep)
         job.multimodalPATH{filenb}(end+1)=filesep;
     end
+    if job.globalavg || job.globalpca
     if ~exist(job.multimodalPATH{filenb},'dir')
         mkdir(job.multimodalPATH{filenb});
+    end
     end
     
     %check SelectedFactors file
