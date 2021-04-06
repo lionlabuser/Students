@@ -30,7 +30,7 @@ rDtp = NIRS.Dt.fir.pp(lst).p; % path for files to be processed
 NC = NIRS.Cf.H.C.N; %number channels
 fs = NIRS.Cf.dev.fs; %sampling rate
 if ~contains(job.covariables,'Constant','IgnoreCase',true)
-    cov.labels=['Constant,' job.Covariables];
+    cov.labels=['Constant,' job.covariables];
 end
 cov.labels =split(cov.labels,','); %get names of covariables to regress
 if isfield(job,'nbtimeminimum')

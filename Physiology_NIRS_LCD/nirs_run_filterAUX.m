@@ -17,18 +17,18 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     NIRS = [];
     load(job.NIRSmat{1});
     
-    
+    %Find the filter step to make sure data has been filtered
     liststeps={NIRS.Dt.fir.pp.pre};
     for xx = 1:length(liststeps)
         if contains(liststeps{xx},'Filter')
             fstep=xx;
         end
     end
-    if ~fstep
+    if exist('fstep','var') == 0 %KR remplacer if ~fstep par if exist('fstep','var') == 0
         error('No filter applied to the NIRS data %s/ntherefore no filtering parameters', (job.NIRSmat{1}))
     end
     
-    %% SET PARAMETERS
+    %% SET FILTERING PARAMETERS
     if job.copynirs || ~isfield(job,'fparameters')
         [lowcut,applylowcut] = str2num(NIRS.Dt.fir.pp(fstep).job.lowcutfreq);
         [highcut ,applyhighcut] = str2num(NIRS.Dt.fir.pp(fstep).job.highcutfreq);
@@ -71,7 +71,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     end
     
     %use last step of preprocessing
-    lst = length(NIRS.Dt.fir.pp);
+    lst = length(NIRS.Dt.fir.pp); %list of preprocessing steps
     rDtp = NIRS.Dt.fir.pp(lst).p; % path for files to be processed
     NC = NIRS.Cf.H.C.N; %number channels
     fs = NIRS.Cf.dev.fs; %sampling rate
@@ -79,16 +79,17 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     if ~isfield(NIRS.Dt,'AUX')
         error('No auxiliary attached to the NIRS file %s\nCheck in your NIRS.mat file... is there a <AUX> field in NIRS.Dt?\n', (job.NIRSmat{1}))
     end
+    
     %% get AUX data + load for each block
-    for iAUX = 1:numel(NIRS.Dt.AUX)
+    for iAUX = 1:numel(NIRS.Dt.AUX) %For each AUX
         newAUX=numel(NIRS.Dt.AUX)+1;
-        if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG')
+        if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG') %AUX name must contain the word AUX or EEG to be recognized
             fprintf('AUX found in NIRS.mat. Creating new AUX .dat file (downsampled, filtered, normalized)...\n')
             if ~isfield(NIRS.Dt.AUX(iAUX).pp(end),'sync_timesec') %check if there were synchronisation -take the last field
                 disp('No segmentation have been made -- ensure that aux synchronisation are ok')
                 disp('FilterAUX not completed')
             else
-                for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p)
+                for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p) %For each bloc
                     nameAUX=NIRS.Dt.AUX(iAUX).pp(end).p{i};
                     try
                         tstart=NIRS.Dt.AUX(iAUX).pp(end).sync_timesec{i};
@@ -99,11 +100,16 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     timeSECaxe = (1/fs):(1/fs):(NIRS.Dt.fir.sizebloc{i}*1/fs);
                     tstop = tstart+timeSECaxe(end);
                     [cPATH,cFILE,cEXT]=fileparts(nameAUX); %current path file and extension
-                    [data,infoBV,marker,auxind_dur_ch] = fopen_EEG(nameAUX, tstart, tstop);
+                    
+                    try
+                    [data,infoBV,marker,auxind_dur_ch] = fopen_EEG(nameAUX, tstart, tstop); %open the AUX file segment corresponding to NIRS
+                    catch
+                        error('AUX not found in the location, consider using Folder Adjustment')
+                    end
                     
                     fsAUX =1/(infoBV.SamplingInterval/1000000); %Frequence echantillonage Hz
-                    [~,q] = rat(fs/fsAUX,0.0001);
-                    AUXupdate.ind_dur_ch=auxind_dur_ch((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:);
+                    [~,q] = rat(fs/fsAUX,0.0001); %Ratio des fréquences d'échantillonnage
+                    AUXupdate.ind_dur_ch=auxind_dur_ch((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:); %select only the events during the NIRS recording
                     AUXupdate.marker=marker((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:);
                     
                     
@@ -112,12 +118,12 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     %%function (physiology) and adapted
                     [nirsdir,nirsname,~] = fileparts(rDtp{i});
                     nirsvmrk_path = fullfile(nirsdir,[nirsname '.vmrk']);
-                    [nirsind_dur_ch] = read_vmrk_find(nirsvmrk_path,'bad_step');
+                    [nirsind_dur_ch] = read_vmrk_find(nirsvmrk_path,'bad_step'); %trouver tous les intervalles jaunes
                     mrks = [];
                     ind = [];
                     noise =  logical(zeros([size(timeSECaxe,2) NC]));
-                    if ~isempty(nirsind_dur_ch) &&  interpolate == 1
-                        maxpoint  = nirsind_dur_ch(:,1)+nirsind_dur_ch(:,2);
+                    if ~isempty(nirsind_dur_ch) &&  interpolate == 1 %Si présence de bruit + veut interpoler
+                        maxpoint  = nirsind_dur_ch(:,1) + nirsind_dur_ch(:,2);
                         badind = find(maxpoint>size(noise,1));
                         if ~isempty(badind)
                             disp(['Warning file ' nirsvmrk_path ' marker : ' num2str(badind') ' are out of range in the data file'])
@@ -161,16 +167,16 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         end
                     end
                     
-                    for ich=1:numel(infoBV.name_ele)
+                    for ich=1:numel(infoBV.name_ele) %Pour chaque AUX
                         
                         tmp = data(:,ich);
                         
                         
                         %% downsample to the same as fs NIRS
-                        rstmp=downsample( tmp , q);
+                        rstmp=downsample(tmp,q);
                         
                         %% INTERPOLATION OF BAD INTERVALS
-                        if ~isempty(nirsind_dur_ch)&&  interpolate == 1
+                        if ~isempty(nirsind_dur_ch) &&  interpolate == 1
                             %eventbadstartstop = [idstart,idstop]
                             for sizebad = 1:size(eventbadstartstop,1)
                                 dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1)-2)+1;
@@ -187,7 +193,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         
                         %% FILTER
                         if paddingsym
-                            d = [fliplr(rstmp);rstmp;fliplr(rstmp)];
+                            d = [fliplr(rstmp);rstmp;fliplr(rstmp)]; %les données sont copiées 3 fois une à la suite de l'autre
                             tstartd = size(rstmp,1)+1;
                             tstopd = size(rstmp,1)*2;
                         else

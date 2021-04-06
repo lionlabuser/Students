@@ -10,9 +10,9 @@
 % ChanXYZ =  x y z coordinates of each channel (in cm)
 
 %% to adapt according to your localization
-dirmtg='C:\Data\data_NIRS\ELAN\ANALYSED\Martine_0m\Montage\';
-load( [dirmtg 'Global.zone'] ,'-mat'); %zone file
-load([dirmtg 'Casque36_ELAN.prj'],'-mat') %prf file
+dirmtg='C:\data\Malnutrition\Resting\NIRS\MTG\';
+load('C:\data\Malnutrition\Resting\NIRS\Zones\Regressor HbO.zone' ,'-mat'); %zone file
+load([dirmtg 'Scout56cm_GoNogo_v3.prj'],'-mat') %prf file
 
 %% help info zone file
 %zone.pos(channel#,[x pos, y pos, z pos, channel distance in CM])
