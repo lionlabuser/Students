@@ -227,7 +227,9 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         
                         %% FILTER
                         if paddingsym
-                            d = [fliplr(rstmp);rstmp;fliplr(rstmp)];
+                            
+                            d = [fliplr(rstmp') rstmp' fliplr(rstmp')];
+                            d=d';
                             tstartd = size(rstmp,1)+1;
                             tstopd = size(rstmp,1)*2;
                         else
