@@ -1,14 +1,14 @@
 %___________________________________________________________________
-% Copyright (C) 2019 LION Lab, Centre de recherche CHU Sainte-Justine
+% Copyright (C) 2021 LCD for lionlab, Centre de recherche CHU Sainte-Justine
 % www.lionlab.umontreal.ca
 %___________________________________________________________________
 function out = nirs_run_GLM_regressAUX(job)
 % 1) Load nirs.mat
 % 2) for each block, load the related AUX data (need to be
-%    previously filtered + downsampled!). 
-% 3) Compute a regression using the AUX data as the regressors (includes 
-%    as well a constant to perform correctly the regression). 
-% 4) Update the SelectedFactors.mat file (or create a new one) with the 
+%    previously filtered + downsampled!).
+% 3) Compute a regression using the AUX data as the regressors (includes
+%    as well a constant to perform correctly the regression).
+% 4) Update the SelectedFactors.mat file (or create a new one) with the
 %    betas for each regressor + each valid block. Correct the NIRS data
 %    using the input regressors (job.Covariables).
 %
@@ -16,10 +16,10 @@ function out = nirs_run_GLM_regressAUX(job)
 %       job: structure with fieldname...
 %           - NIRSmat, containing at least one path+file of a NIRSmat file
 %                       eg. job.NIRSmat={'C:...\NIRS.mat'};
-%           - covariables, containing names of AUXregressors. Need to be 
-%           linked in AUX <filtered AUX> with the script 
-%           <nirs_run_filterAUX.m>. If more than one variables, separate 
-%           by a comma (without space). The script will automatically add 
+%           - covariables, containing names of AUXregressors. Need to be
+%           linked in AUX <filtered AUX> with the script
+%           <nirs_run_filterAUX.m>. If more than one variables, separate
+%           by a comma (without space). The script will automatically add
 %           a constant (of 1).
 %                       eg. job.covariables='Sat,Resp';
 
@@ -36,8 +36,16 @@ cov.labels =split(cov.labels,','); %get names of covariables to regress
 if isfield(job,'nbtimeminimum')
     nbtimeminimum=job.nbtimeminimum;
 else
-nbtimeminimum=10/40; %the % time non artifacted to be considered as a good channel
+    nbtimeminimum=10/40; %the % time non artifacted to be considered as a good channel
 end
+
+
+if isfield(job,'VIEWplot')
+    VIEWplot=job.VIEWplot;
+else
+    VIEWplot=0;
+end
+
 %%%%%%%%%%%
 %GET AUXILIARIES
 if ~isfield(NIRS.Dt,'AUX')
@@ -67,6 +75,7 @@ else
     PARCOMP=struct;
     Prow=1;
 end
+IDrows=[]; %Id of rows for the current script in the PARCOMP - will be use later to create a graph output regarding the betas
 
 %% for each block
 for f = 1:size(rDtp,1)
@@ -139,10 +148,7 @@ for f = 1:size(rDtp,1)
     if ~(size(cov.data,1)==size(nirsdata,1))
         error('Time axis of NIRS data and AUX data (covariables) don''t have the same size')
     end
-    %iduse = find(sum(~isnan(score),2)==size(score,2)& ~isnan(MATall(:,i,j)));
-    %       X = score(iduse,:);
-    %      y = MATall(iduse,i,j);
-    %     if ~isempty(iduse)
+    
     %R2 statistic, the F-statistic and its p-value, and an estimate of the error variance.
     goodCH=[];
     for CH = 1:NC
@@ -166,6 +172,13 @@ for f = 1:size(rDtp,1)
             tmpErrorVariance(CH)= NaN;
         end
     end
+    
+    %if the block is bad (no good channels), then skip to next one
+    if isempty(goodCH)
+        continue
+    end
+    
+    %Regression
     tmpXcorr=nirsdata;
     for cc=1:length(cov.labels)
         tmpXm{cc} = tmpbeta(cc,:).* cov.data(:,cc);
@@ -173,7 +186,6 @@ for f = 1:size(rDtp,1)
             tmpXcorr= tmpXcorr - tmpXm{cc};
         end
     end
-    
     
     %write SELECTED FACTORS new info
     PARCOMP(Prow).file= f;
@@ -200,13 +212,92 @@ for f = 1:size(rDtp,1)
     PARCOMP(Prow).ComponentToKeep = 1;
     PARCOMP(Prow).idreg = 1;
     PARCOMP(Prow).topo =  tmpbeta(PARCOMP(Prow).ComponentToKeep,:);
+    
+    IDrows=[IDrows Prow];
     Prow=Prow+1;
     clear tmp* cov.data goodCH nirsdata idbad
     
     disp(['block ' num2str(f) ' done'] );
 end
 
+%% figure of beta distribution
+figg=figure('units','normalized','outerposition',[0 0 1 1]);
+figg=tiledlayout(2,length(cov.labels)-1,'TileSpacing','Compact','Padding','Compact');
+maintitle='Distribution of AUX beta values for physiology regression on HbO channels, sorted by channels and blocks';
+smalltitle='Median + interquartile range';
+%get betas for hbo
+for f=1:length(IDrows)
+    for cc=1:length(cov.labels)
+        figbetas.(cov.labels{cc})(f,:)=PARCOMP(IDrows(f)).beta(cc,1:(NC/2));
+    end
+end
+for cc=1:length(cov.labels)
+    if ~(cc==cov.ConstantID) %except the constant
+        nexttile;
+        boxchart(figbetas.(cov.labels{cc}),'markerstyle','.');
+        ylabel('Beta values'); xlabel('Channels'); title(cov.labels{cc});yline(0,'--');
+        nexttile;
+        boxchart(figbetas.(cov.labels{cc})','markerstyle','.');
+        ylabel('Beta values'); xlabel('Blocks'); title(cov.labels{cc});yline(0,'--');
+        xticklabels([PARCOMP(IDrows).file]);
+    end
+end
+title(figg,maintitle,'fontweight','bold')
+subtitle(figg,smalltitle)
+saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.fig'));
+saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.png'));
+close
+clear figg figbetas
 
+%% figure of corrected data
+if VIEWplot
+figg2=figure('units','normalized','outerposition',[0 0 1 1]);
+figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
+sizefig=ceil(length(IDrows)/5);
+yy=[];
+for f=1:length(IDrows)
+    if any(f==6:5:70)
+        %adjust the Y limits so that all are the same!
+        for ir=1:15
+            nexttile(ir);
+            xlim([0 size(PARCOMP(IDrows(1)).data,1)])
+            ylim([min(yy) max(yy)])
+        end
+        %save fig
+        saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(f-5) '-' num2str(f-1) '.png']))
+        close; clear figg2
+        figg2=figure('units','normalized','outerposition',[0 0 1 1]);
+        figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
+        yy=[];
+    end
+
+    nexttile;
+    plot(PARCOMP(IDrows(f)).data(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); yy=[yy ylim];
+    ylabel(['Block ' num2str(PARCOMP(IDrows(f)).file)],'fontweight','bold','FontSize',12);
+    if any(f==1:5:70); title('HBO initial data'); end
+    
+    nexttile;
+    plot(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)));  yy=[yy ylim];   hold on
+    plot(mean(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)),2,'omitnan'),'Color','k','LineWidth',2);
+    yy=[yy ylim];
+    if any(f==1:5:70); title('Physio component'); end
+    
+    nexttile;
+    plot(PARCOMP(IDrows(f)).dataCORR(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).dataCORR(1:38,1:(NC/2)),'omitnan'));  yy=[yy ylim];
+    if any(f==1:5:70); title('Corrected data'); end
+end
+%adjust the Y limits so that all are the same!
+for ir=1:(3*(f-5*floor(f/5)))
+    nexttile(ir);
+    xlim([0 size(PARCOMP(IDrows(1)).data,1)])
+    ylim([min(yy) max(yy)])
+end
+%save fig
+saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(5*floor(f/5)+1) '-' num2str(f) '.png']))
+close; clear figg2
+end
+
+%% save nirs mat and PARCOMP
 fprintf('Update NIRSmat COMPLETED ...%s\n*\n**\n***\n',job.NIRSmat{1})
 save(job.NIRSmat{1},'NIRS');
 save(fullfile(nirsPATH,'SelectedFactors.mat'),'PARCOMP');
