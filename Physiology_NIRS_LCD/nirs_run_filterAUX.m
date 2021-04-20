@@ -58,6 +58,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         else
             paddingsym =job.fparameters.paddingsym;
         end
+        
         if  contains(job.fparameters.interpolate,'same')
             interpolate = NIRS.Dt.fir.pp(fstep).job.interpolatebadfilter;  %interpolate bad intervals
         else
@@ -71,6 +72,20 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         end
     end
     
+    %new parameters for interpolation 
+    if isfield(job,'newparameters') %job.newparameters.interp_mode=  ;
+        if isfield(job.newparameters,'interp_mode') 
+            %1= for linear fit between start and end of bad segment
+            %2= replace bad segments with the average of the block (good
+            %portion without artifact)
+            interp_mode=job.newparameters.interp_mode;
+        else
+            interp_mode=1; 
+        end
+    else
+        interp_mode=1;
+    end
+        
     %use last step of preprocessing
     lst = length(NIRS.Dt.fir.pp);
     rDtp = NIRS.Dt.fir.pp(lst).p; % path for files to be processed
@@ -207,17 +222,32 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         
                         %% INTERPOLATION OF BAD INTERVALS
                         if ~isempty(nirsind_dur_ch)&&  interpolate == 1
-                            %eventbadstartstop = [idstart,idstop]
-                            for sizebad = 1:size(eventbadstartstop,1)
-                                dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1))+1;
-                                y1=rstmp((eventbadstartstop(sizebad,1)));
-                                y2=rstmp(eventbadstartstop(sizebad,2));
-                                interval = (eventbadstartstop(sizebad,1)):eventbadstartstop(sizebad,2);
-                                %y = ax + b
-                                a = (y2-y1)/dur;
-                                b = y1 - a*(eventbadstartstop(sizebad,1));
-                                interp = a.*interval + b;
-                                rstmp(interval) = interp;
+                            
+                            if interp_mode==1 %linear fit
+                                %eventbadstartstop = [idstart,idstop]
+                                for sizebad = 1:size(eventbadstartstop,1)
+                                    dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1))+1;
+                                    y1=rstmp((eventbadstartstop(sizebad,1)));
+                                    y2=rstmp(eventbadstartstop(sizebad,2));
+                                    interval = (eventbadstartstop(sizebad,1)):eventbadstartstop(sizebad,2);
+                                    %y = ax + b
+                                    a = (y2-y1)/dur;
+                                    b = y1 - a*(eventbadstartstop(sizebad,1));
+                                    interp = a.*interval + b;
+                                    rstmp(interval) = interp;
+                                end
+                            elseif interp_mode==2 %average
+                                
+                                for sizebad = 1:size(eventbadstartstop,1)
+                                    dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1))+1;
+                                    y1=rstmp((eventbadstartstop(sizebad,1)));
+                                    y2=rstmp(eventbadstartstop(sizebad,2));
+                                    interval = (eventbadstartstop(sizebad,1)):eventbadstartstop(sizebad,2);
+                                    goodinterval=rstmp([1:eventbadstartstop(sizebad,1) eventbadstartstop(sizebad,2):end]);
+                                    
+                                    rstmp(interval) = mean(goodinterval);
+                                end
+                                
                             end
                         end
                         
