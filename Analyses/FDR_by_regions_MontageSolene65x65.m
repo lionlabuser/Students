@@ -2,7 +2,7 @@ clear;clc
 load('C:\Users\laura\AnalysesNIRS\OtherProjects\Solene\Facteurs_nana_sansmat_beauxsujets_2021_03_31_groupe_pval.mat')
 NC=65;
 channels=1:NC;
-p = 0.05; %%%you can modify this%%%
+alpha = 0.05; %%%you can modify this%%%
 
 letter= {'A' 'B' 'M' 'E' 'C' 'D'  'O' 'F' };
 label={'F_R' 'FT_R' 'C_R' 'T_R'  'F_L' 'FT_L' 'C_L' 'T_L'  };
@@ -75,43 +75,46 @@ for m=1:length(mat)
     
     %%%%fdr%%%%%%%%%%%%%
     
-    % % FDR according to Storey 2002%%%
-    [~,q1] = mafdr(temp);
-    n_sig = sum(q1 <= p);
-    mat(m).corrP{1,1}=n_sig;
-    mat(m).corrP{1,2}=sprintf('%d tests are significant p<=%.2f using FDR correction (Storey, 2002)\n',n_sig, p);
-    
+  
     % FDR according to Benjamini & Hochberg(1995) de Groppe%%%%
-    [~, ~, ~, q2] = fdr_bh(temp, p, 'pdep', 'yes' );
-    n_sig = sum(q2 <= p);
-    mat(m).corrP{2,1}=n_sig;
-    mat(m).corrP{2,2}=sprintf('%d tests are significant p<=%.2f using FDR correction (Benjamini,1995)\n',n_sig, p);
+    [~, ~, ~, q1] = fdr_bh(temp, alpha, 'pdep', 'yes' );
+    n_sig = sum(q1 <= alpha);
+    mat(m).corrP{1,1}=n_sig;
+    mat(m).corrP{1,2}=sprintf('%d tests are significant p<=%.2f using FDR correction (Benjamini,1995)\n',n_sig, alpha);
     
     %Bonferroni-Holm correction by Groppe%%% Corrected_p are greater than 1... doesn't make sense
-    [q3, ~] = bonf_holm(temp, p);
-    n_sig = sum(q3 <= p);
-    mat(m).corrP{3,1}=n_sig;
-    mat(m).corrP{3,2}=sprintf('%d tests are significant p<=%.2f using Bonferroni-Holm correction\n',n_sig, p);
+    [q2, ~] = bonf_holm(temp, alpha);
+    n_sig = sum(q2 <= alpha);
+    mat(m).corrP{2,1}=n_sig;
+    mat(m).corrP{2,2}=sprintf('%d tests are significant p<=%.2f using Bonferroni-Holm correction\n',n_sig, alpha);
     
     %Multicmp function to apply Holm Step Down Procedure%%
-    [q4,tmpalpha] = multicmp (temp','down',p);
-    n_sig = sum(q4 <= p);
-    mat(m).corrP{4,1}=n_sig;
-    mat(m).corrP{4,2}=sprintf('%d tests are significant p<=%.2f using Holm Step Down Procedure\n',n_sig, p);
+    [q3,tmpalpha] = multicmp (temp','down',alpha);
+    n_sig = sum(q3 <= alpha);
+    mat(m).corrP{3,1}=n_sig;
+    mat(m).corrP{3,2}=sprintf('%d tests are significant p<=%.2f using Holm Step Down Procedure\n',n_sig, alpha);
     
     %Multicmp function to apply Hochberg's step up procedure%%
-    [q5,tmpalpha] = multicmp (temp','up',p);
-    n_sig = sum(q5 <= p);
-    mat(m).corrP{5,1}=n_sig;
-    mat(m).corrP{5,2}=sprintf('%d tests are significant p<=%.2f using Hochberg Step Up Procedure\n',n_sig, p);
+    [q4,tmpalpha] = multicmp (temp','up',alpha);
+    n_sig = sum(q4 <= alpha);
+    mat(m).corrP{4,1}=n_sig;
+    mat(m).corrP{4,2}=sprintf('%d tests are significant p<=%.2f using Hochberg Step Up Procedure\n',n_sig, alpha);
     
     %Multicmp function to apply FDR correction according to Benjamini & Hochberg%%
-    [q6,tmpalpha] = multicmp (temp','fdr',0.05);
-    n_sig = sum(q6 <= p);
-    mat(m).corrP{6,1}=n_sig;
-    mat(m).corrP{6,2}=sprintf('%d tests are significant p<=%.2f using FDR correction (Benjamini, 1995)\n',n_sig, p);
+    [q5,tmpalpha] = multicmp (temp','fdr',0.05);
+    n_sig = sum(q5 <= alpha);
+    mat(m).corrP{5,1}=n_sig;
+    mat(m).corrP{5,2}=sprintf('%d tests are significant p<=%.2f using FDR correction (Benjamini, 1995)\n',n_sig, alpha);
     
-    
+      % % FDR according to Storey 2002%%%
+    %DANS LE SCRIPT MAFDR... CA SEMBLE ÊTRE À LA LIGNE 212 QUE LES Q VALUES
+    %SONT CALCULÉES... JE NE COMPRENDS PAS LE CALCUL, MAIS ÇA SEMBLE FAIRE
+    %QQCH D'ÉTRANGE. 
+%     [q6,test] = mafdr(temp);
+%     n_sig = sum(q6 <= alpha);
+%     mat(m).corrP{6,1}=n_sig;
+%     mat(m).corrP{6,2}=sprintf('%d tests are significant p<=%.2f using FDR correction (Storey, 2002)\n',n_sig, alpha);
+%     
     
     %reshape the matrices to be saved
     mat(m).corrP{1,3}=nan(size(original));
@@ -119,7 +122,7 @@ for m=1:length(mat)
     mat(m).corrP{3,3}=nan(size(original));
     mat(m).corrP{4,3}=nan(size(original));
     mat(m).corrP{5,3}=nan(size(original));
-    mat(m).corrP{6,3}=nan(size(original));
+
     xx=1;
     for c=1:size(original,1)
         for cc=(c+1):size(original,2)
@@ -128,22 +131,24 @@ for m=1:length(mat)
             mat(m).corrP{3,3}(c,cc)=q3(xx);
             mat(m).corrP{4,3}(c,cc)=q4(xx);
             mat(m).corrP{5,3}(c,cc)=q5(xx);
-            mat(m).corrP{6,3}(c,cc)=q6(xx);
+
             
-            mat(m).corrP{1,3}(cc,c)=q1(xx);
+           mat(m).corrP{1,3}(cc,c)=q1(xx);
             mat(m).corrP{2,3}(cc,c)=q2(xx);
             mat(m).corrP{3,3}(cc,c)=q3(xx);
             mat(m).corrP{4,3}(cc,c)=q4(xx);
             mat(m).corrP{5,3}(cc,c)=q5(xx);
-            mat(m).corrP{6,3}(cc,c)=q6(xx);
+
             xx=xx+1;
         end
     end
     
-    [~,pos]=max([mat(m).corrP{1:6,1}]);
+
+[~,pos]=max([mat(m).corrP{1:5,1}]);
     mat(m).results=mat(m).corrP{pos,2};
     mat(m).adj_pval=mat(m).corrP{pos,3};
+    clear q*
 end
 
-
+save('resultats_par_regions_2021-04-21.mat','roiChan','mat','letter','label','matcorr','ZoneList')
 
