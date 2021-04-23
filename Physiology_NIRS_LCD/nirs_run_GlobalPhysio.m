@@ -56,7 +56,8 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     NC = NIRS.Cf.H.C.N; %number of channels
     fs = NIRS.Cf.dev.fs; %NIRS sampling rate
     wl=NIRS.Cf.H.C.wl';
-    %nbchminimum = 5/100; %0.05;             %en pourcentage
+    nbchminimum =  0.37; %verification for each block: minimum % of good channels to keep the block
+                        %min 20 channels out of 54
     if isfield(job,'nbtimeminimum')
         nbtimeminimum=job.nbtimeminimum;
     else
@@ -177,11 +178,20 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         if ~isempty(idbad)
             CHhbo (idbad) = [];
             if isempty(CHhbo)
-                disp(['No good channel in the regressor zone please verify your zone ', zone.label{RegZone}])
+               fprintf('No good channel in the regressor zone please verify your zone %s.\nBlock %s is skipped.\n',...
+                zone.label{RegZone},f);
                 continue
             end
         end
         data = d(tstart:tstop,CHhbo);
+        
+        % verification of minimum number of channels
+        currentNchan=size(data,2);
+        if currentNchan < nbchminimum*NC/2
+            fprintf('Not enough valid channels (%d HbO channels) to continue with the spatial filtering.\nBlock %s is skipped.\n',...
+                currentNchan,f);
+            continue
+        end
         
         %SECOND WAVELENGTH ~ HBR
         CHhbr =  CHhbo + size(d,2)/2;
@@ -510,7 +520,7 @@ for ci=1:size(SpatialSig,1) %for each channel (row)
             wij(ci,cj)=exp((-(Dist(ci,cj))^2)/(2*ksigma^2)); %calculate the multiplication factor based on the distance between channels ci and cj
             %lorsque ci==cj >> wij = 1
         end
-        %wij(ci,:)=wij(ci,:)./sum(wij(ci,:)); %TEST1 
+        wij(ci,:)=wij(ci,:)./sum(wij(ci,:)); %TEST1 
         %   NORMALISATION normalized the sum of multiplication factors to
         %   1. FOR EACH CHANNEL, the sum of its multiplication factors
         %   equals 1. For channels that have a lot of neighbors, it makes
@@ -519,7 +529,7 @@ for ci=1:size(SpatialSig,1) %for each channel (row)
         %   their own weigth is larger in proportion to the total.
 
 end
-wij=(wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN. 
+%wij=(wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN. 
 % the sum of each column is approx equal to the sum of each column from the
 % initial SpatialSig matrice.
 % It takes the WHOLE MATRICE to do the normalization. therefore the sum of

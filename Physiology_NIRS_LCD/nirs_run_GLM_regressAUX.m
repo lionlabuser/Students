@@ -39,6 +39,8 @@ else
     nbtimeminimum=10/40; %the % time non artifacted to be considered as a good channel
 end
 
+nbchminimum =  0.37; %verification for each block: minimum % of good channels to keep the block
+%min 20 channels out of 54
 
 if isfield(job,'VIEWplot')
     VIEWplot=job.VIEWplot;
@@ -120,6 +122,14 @@ for f = 1:size(rDtp,1)
     idbad = find(badch==0|badchY==0); %remove exclude channel from regressor
     if ~isempty(idbad)
         nirsdata(:,idbad)=nan;
+    end
+    
+    % verification of minimum number of channels
+    currentNchan=size(nirsdata(1,1:NC/2),2);
+    if currentNchan < nbchminimum*NC/2
+        fprintf('Not enough valid channels (%d HbO channels) to continue with the spatial filtering.\nBlock %s is skipped.\n',...
+            currentNchan,f);
+        continue
     end
     
     % load auxiliaries (regressors)
@@ -251,50 +261,50 @@ clear figg figbetas
 
 %% figure of corrected data
 if VIEWplot
-figg2=figure('units','normalized','outerposition',[0 0 1 1]);
-figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
-sizefig=ceil(length(IDrows)/5);
-yy=[];
-for f=1:length(IDrows)
-    if any(f==6:5:70)
-        %adjust the Y limits so that all are the same!
-        for ir=1:15
-            nexttile(ir);
-            xlim([0 size(PARCOMP(IDrows(1)).data,1)])
-            ylim([min(yy) max(yy)])
+    figg2=figure('units','normalized','outerposition',[0 0 1 1]);
+    figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
+    sizefig=ceil(length(IDrows)/5);
+    yy=[];
+    for f=1:length(IDrows)
+        if any(f==6:5:70)
+            %adjust the Y limits so that all are the same!
+            for ir=1:15
+                nexttile(ir);
+                xlim([0 size(PARCOMP(IDrows(1)).data,1)])
+                ylim([min(yy) max(yy)])
+            end
+            %save fig
+            saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(f-5) '-' num2str(f-1) '.png']))
+            close; clear figg2
+            figg2=figure('units','normalized','outerposition',[0 0 1 1]);
+            figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
+            yy=[];
         end
-        %save fig
-        saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(f-5) '-' num2str(f-1) '.png']))
-        close; clear figg2
-        figg2=figure('units','normalized','outerposition',[0 0 1 1]);
-        figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
-        yy=[];
+        
+        nexttile;
+        plot(PARCOMP(IDrows(f)).data(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); yy=[yy ylim];
+        ylabel(['Block ' num2str(PARCOMP(IDrows(f)).file)],'fontweight','bold','FontSize',12);
+        if any(f==1:5:70); title('HBO initial data'); end
+        
+        nexttile;
+        plot(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)));  yy=[yy ylim];   hold on
+        plot(mean(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)),2,'omitnan'),'Color','k','LineWidth',2);
+        yy=[yy ylim];
+        if any(f==1:5:70); title('Physio component'); end
+        
+        nexttile;
+        plot(PARCOMP(IDrows(f)).dataCORR(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).dataCORR(1:38,1:(NC/2)),'omitnan'));  yy=[yy ylim];
+        if any(f==1:5:70); title('Corrected data'); end
     end
-
-    nexttile;
-    plot(PARCOMP(IDrows(f)).data(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); yy=[yy ylim];
-    ylabel(['Block ' num2str(PARCOMP(IDrows(f)).file)],'fontweight','bold','FontSize',12);
-    if any(f==1:5:70); title('HBO initial data'); end
-    
-    nexttile;
-    plot(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)));  yy=[yy ylim];   hold on
-    plot(mean(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)),2,'omitnan'),'Color','k','LineWidth',2);
-    yy=[yy ylim];
-    if any(f==1:5:70); title('Physio component'); end
-    
-    nexttile;
-    plot(PARCOMP(IDrows(f)).dataCORR(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).dataCORR(1:38,1:(NC/2)),'omitnan'));  yy=[yy ylim];
-    if any(f==1:5:70); title('Corrected data'); end
-end
-%adjust the Y limits so that all are the same!
-for ir=1:(3*(f-5*floor(f/5)))
-    nexttile(ir);
-    xlim([0 size(PARCOMP(IDrows(1)).data,1)])
-    ylim([min(yy) max(yy)])
-end
-%save fig
-saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(5*floor(f/5)+1) '-' num2str(f) '.png']))
-close; clear figg2
+    %adjust the Y limits so that all are the same!
+    for ir=1:(3*(f-5*floor(f/5)))
+        nexttile(ir);
+        xlim([0 size(PARCOMP(IDrows(1)).data,1)])
+        ylim([min(yy) max(yy)])
+    end
+    %save fig
+    saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(5*floor(f/5)+1) '-' num2str(f) '.png']))
+    close; clear figg2
 end
 
 %% save nirs mat and PARCOMP
