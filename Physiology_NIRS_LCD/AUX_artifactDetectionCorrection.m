@@ -46,7 +46,7 @@ threshold=[.35 .7;... %moving STD threshold, respectively for SAT and RESP, in s
 %    .2 .2 ]; %moving STD DIFFERENCE threshold, respectively for SAT and RESP, in standardized units    .34 .67
 adjwindow=[1.5 3.5] ; %moving window length before and after X in seconds ( *2: if you want a 3 sec window = please write 1.5)
 minlength=3; %minimum length of intervals (good or bad) in data points
-
+pausetime=5;
 question1=[0 0];
 while any(question1==0)
     clear xma
@@ -65,8 +65,8 @@ while any(question1==0)
         for c=1:2
             mstd(x,c)=std(newdata(tmpwindow(1):tmpwindow(2),c))  ;
             mavg(x,c)=mean(newdata(tmpwindow(1):tmpwindow(2),c))  ;
-           % if x==1; mdstd(x,c)=0;
-           % else; mdstd(x,c)=abs(diff([ mstd(x-1,c) mstd(x,c)])); end
+            % if x==1; mdstd(x,c)=0;
+            % else; mdstd(x,c)=abs(diff([ mstd(x-1,c) mstd(x,c)])); end
             
             %identify which periods are considered an interval if at least one threshold is overpassed
             if mstd(x,c)>=threshold(1, c) || abs(mavg(x,c))>=threshold(2,c) %|| mdstd(x,c)>=threshold(3, c)
@@ -97,7 +97,7 @@ while any(question1==0)
             plot(newdata(:,c)); ylabel('AUX DATA')
             ylim([-5 5])
             nexttile;
-           area(1:length(newdata(:,c)),MA(:,c)*10,0,'LineStyle','none','FaceColor',[.7 .7 .7]);hold on %box
+            area(1:length(newdata(:,c)),MA(:,c)*10,0,'LineStyle','none','FaceColor',[.7 .7 .7]);hold on %box
             plot(mstd(:,c)); ylim([0 1.2]); yline(threshold(1,c)); ylabel('Moving STD')
             %nexttile;
             %area(1:length(newdata(:,c)),MA(:,c)*10,0,'LineStyle','none','FaceColor',[.7 .7 .7]);hold on %box
@@ -113,14 +113,16 @@ while any(question1==0)
                 for a=1:size(figaux.Children,1)
                     nexttile(a); xlim([minn(xx) maxx(xx)]);
                 end
-                pause(5)
+                pause(pausetime)
             end
-            question1(c)=input('Are you satisfied with the identification of bad intervals for the current aux? [1=yes,0=no] ');
+            question1(c)=input(['Are you satisfied with the identification of bad intervals for the current aux (' chanlabels{c} ')? [1=yes,0=no] ']);
             if ~question1(c)
                 threshold(1,c)=input(['New threshold for moving STD? (previous = ' num2str(threshold(1,c)) '). Enter here: ']);
                 %threshold(3,c)=input(['New threshold for moving STD changes? (previous = ' num2str(threshold(3,c)) '). Enter here: ']);
                 threshold(2,c)=input(['New threshold for moving AVG? (previous = ' num2str(threshold(2,c)) '). Enter here: ']);
                 adjwindow(c)=input(['New duration for moving window (in sec)? (previous = ' num2str(adjwindow(c)) '). Enter here: ']);
+                pausetime=input(['The time window was changing every ' num2str(pausetime) ' sec. How many seconds do you want to see the data?. Enter here: ']);
+                
             else
                 savefig([AUXpath filesep 'ArtifactDetection_' chanlabels{c} '.fig'])
             end
@@ -151,7 +153,7 @@ for c=1:2 %segmentation
         end
     end
 end
-
+pausetime=3;
 int=[12 1]; %xaxis multiplier
 pp=[.02 .01]; %cubic smoothing spline (pp=smoothing parameter);
 %close to 0= least-square straight line fit ;
@@ -192,15 +194,16 @@ while any(question2==0)
         for a=1:size(figcorr.Children,1)
             nexttile(a); xlim([minn(xx) maxx(xx)]);
         end
-        pause(3)
+        pause(pausetime)
     end
     
     for c=1:2
         
-        question2(c)=input('Are you satisfied with the identification of bad intervals for the current aux? [1=yes,0=no] ');
+        question2(c)=input(['Are you satisfied with the identification of bad intervals for ' chanlabels{c} ' aux? [1=yes,0=no] Enter here: ']);
         if ~question2(c)
             int(1,c)=input(['New x-axis multiplier (previous = ' num2str(int(1,c)) '). Enter here: ']);
             pp(2,c)=input(['New smoothing parameter? (previous = ' num2str(pp(2,c)) '). Enter here: ']);
+            pausetime=input(['The time window was changing every ' num2str(pausetime) ' sec. How many seconds do you want to see the data?. Enter here: ']);
         end
     end
 end
