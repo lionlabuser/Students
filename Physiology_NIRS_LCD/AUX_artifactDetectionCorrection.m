@@ -1,6 +1,6 @@
 clear;close all
-AUXpath='C:\Users\laura\AnalysesNIRS\MART0m\Multimodal\BB043';
-AUXfile='BB043_0m_Mart_AUX.dat';
+AUXpath='C:\Users\laura\AnalysesNIRS\MART0m\Multimodal\BB032';
+AUXfile='BB032_0m_hist_AUX.dat';
 idpart=split(AUXpath,filesep);
 generalmultipath=fullfile(idpart{1:end-1}); %to get the general multimodal folder
 idpart=idpart{end}; %to get participant ID
@@ -41,10 +41,10 @@ for c=1:2
     newdata(:,c)=zscore(newdata(:,dataid(c))); %normalized
 end
 
-threshold=[.35 .7;... %moving STD threshold, respectively for SAT and RESP, in standardized units    .34 .67
-    .4   1.4];%...  %moving AVG threshold, respectively for SAT and RESP, in standardized units    .4   1.0
+threshold=[.3 .7;... %moving STD threshold, respectively for SAT and RESP, in standardized units    .34 .67
+    .4   .8];%...  %moving AVG threshold, respectively for SAT and RESP, in standardized units    .4   1.0
 %    .2 .2 ]; %moving STD DIFFERENCE threshold, respectively for SAT and RESP, in standardized units    .34 .67
-adjwindow=[1.5 3.5] ; %moving window length before and after X in seconds ( *2: if you want a 3 sec window = please write 1.5)
+adjwindow=[1 3] ; %moving window length before and after X in seconds ( *2: if you want a 3 sec window = please write 1.5)
 minlength=3; %minimum length of intervals (good or bad) in data points
 pausetime=5;
 question1=[0 0];
@@ -154,7 +154,7 @@ for c=1:2 %segmentation
     end
 end
 pausetime=3;
-int=[12 1]; %xaxis multiplier
+int=[6 1]; %xaxis multiplier
 pp=[.02 .01]; %cubic smoothing spline (pp=smoothing parameter);
 %close to 0= least-square straight line fit ;
 %close to 1= natural cubic spline interpolant;
@@ -201,8 +201,8 @@ while any(question2==0)
         
         question2(c)=input(['Are you satisfied with the identification of bad intervals for ' chanlabels{c} ' aux? [1=yes,0=no] Enter here: ']);
         if ~question2(c)
-            int(1,c)=input(['New x-axis multiplier (previous = ' num2str(int(1,c)) '). Enter here: ']);
-            pp(2,c)=input(['New smoothing parameter? (previous = ' num2str(pp(2,c)) '). Enter here: ']);
+            int(c)=input(['New x-axis multiplier (previous = ' num2str(int(c)) '). Enter here: ']);
+            pp(c)=input(['New smoothing parameter? (previous = ' num2str(pp(c)) '). Enter here: ']);
             pausetime=input(['The time window was changing every ' num2str(pausetime) ' sec. How many seconds do you want to see the data?. Enter here: ']);
         end
     end
@@ -225,4 +225,27 @@ disp(fileoutAUX)
 
 %save update file for following all participants' AUX artifact correction
 save(allupdatefile,'out');
+
+
+%% UPDATE INFO IN NIRS.MAT
+nirsmat=['C:\Users\laura\AnalysesNIRS\MART0m\' idpart '\Segment\NormV2\NIRS.mat'];
+
+NIRS = [];
+load(nirsmat);
+
+
+for iAUX = 1:numel(NIRS.Dt.AUX)
+    newAUX=numel(NIRS.Dt.AUX)+1;
+    if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG')
+        fprintf('AUX found in NIRS.mat. Changing name of AUX to get the corrected AUX...\n')
+        
+        for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p)
+            
+            [cPATH,cFILE,cEXT]=fileparts(NIRS.Dt.AUX(iAUX).pp(end).p{i});
+            NIRS.Dt.AUX(iAUX).pp(end).p{i}=fullfile(cPATH,['c' cFILE cEXT]);
+        end
+    end
+end
+save(nirsmat,'NIRS');
+fprintf('Update+save completed: %s\n',nirsmat)
 
