@@ -2,7 +2,7 @@ function out = nirs_writeNIR_aftercorr(job)
 DelPreviousData  = job.DelPreviousData;
 prefix = 'c'; %for "corrected"
 
-corr=job.globalmethod;
+corr = job.globalmethod;
 
 load(job.NIRSmat{1});
 
@@ -18,7 +18,7 @@ fs = NIRS.Cf.dev.fs;
 % Load Selected factors
 load(fullfile(dir2,'SelectedFactors.mat'),'PARCOMP');
 
-Grows=find(contains({PARCOMP.label},corr)); %rows where the selected global regression is localized
+Grows = find(contains({PARCOMP.label},corr)); %rows where the selected global regression is localized
 validblocks=[PARCOMP(Grows).file];
 
 

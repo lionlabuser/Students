@@ -56,18 +56,20 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     NC = NIRS.Cf.H.C.N; %number of channels
     fs = NIRS.Cf.dev.fs; %NIRS sampling rate
     wl=NIRS.Cf.H.C.wl';
-    %nbchminimum = 5/100; %0.05;             %en pourcentage
+    
+    %nbchminimum = 5/100; %0.05; %en pourcentage
     if isfield(job,'nbtimeminimum')
         nbtimeminimum=job.nbtimeminimum;
     else
     nbtimeminimum=10/40; %the % time non artifacted to be considered as a good channel
     end
+    
     load(job.physzone{filenb}   ,'-mat');
     
-    if ~contains(job.multimodalPATH{filenb}(end),filesep)
-        job.multimodalPATH{filenb}(end+1)=filesep;
+    if ~contains(job.multimodalPATH{filenb}(end),filesep) %verify if there's a file sep at the end of the path
+        job.multimodalPATH{filenb}(end+1) = filesep;
     end
-    if ~exist(job.multimodalPATH{filenb},'dir')
+    if ~exist(job.multimodalPATH{filenb},'dir') %verify if directory exists
         mkdir(job.multimodalPATH{filenb});
     end
     
@@ -75,27 +77,27 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     [nirsPATH,~,~] = fileparts(job.NIRSmat{filenb});
     if exist(fullfile(nirsPATH,'SelectedFactors.mat'),'file')
         load(fullfile(nirsPATH,'SelectedFactors.mat'))
-        Prow=length(PARCOMP)+1;
+        Prow = length(PARCOMP)+1;
     else
-        PARCOMP=struct;
-        Prow=1;
+        PARCOMP = struct;
+        Prow = 1;
     end
     
     %Update NIRS.mat file for AUX
     if job.globalavg
-        AUXavg=numel(NIRS.Dt.AUX)+1;
-        NIRS.Dt.AUX(AUXavg).label='GlobalAVG';
+        AUXavg = numel(NIRS.Dt.AUX) + 1;
+        NIRS.Dt.AUX(AUXavg).label = 'GlobalAVG';
     end
     if job.globalpca
-        AUXpca=numel(NIRS.Dt.AUX)+1;
-        NIRS.Dt.AUX(AUXpca).label='GlobalPCA';
+        AUXpca = numel(NIRS.Dt.AUX) + 1;
+        NIRS.Dt.AUX(AUXpca).label = 'GlobalPCA';
     end
     
     %%Determine regressor zone and channel zones
-    %(first column regresor channel to average, second row column ch to apply)
+    %(first column regressor channels, second row column ch to apply)
     RegZone=[];
     ChanZone=[];
-    for iz =1:numel(zone.label)
+    for iz = 1:numel(zone.label) %pour chaque zone
         tmp = upper(zone.label{iz});
         if numel(tmp)>9
             if strcmp(tmp(1:9),'REGRESSOR')
@@ -122,13 +124,13 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
 %         return
 %     end
     
-    for f = 1:size(rDtp,1)
-        d = fopen_NIR(rDtp{f,1},NC)';
+    for f = 1:size(rDtp,1) %for each block
+        d = fopen_NIR(rDtp{f,1},NC)'; % open NIRS data
         [cPATH,cFILE,~] = fileparts(rDtp{f});
-        tstart=1;
-        tstop=size(d,1);
+        tstart = 1;
+        tstop = size(d,1);
         badch = NIRS.Cf.H.C.ok(:,f);
-        if badch==0 %if all channels are bad, switch to next block!
+        if badch == 0 %if all channels are bad, switch to next block!
             continue
         end
         
@@ -136,16 +138,16 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         mrks = [];
         ind = [];
         noise =  logical(zeros(size(d)));
-        badchY=ones([size(d,2) 1]);
+        badchY = ones([size(d,2) 1]);
         [ind_dur_ch] = read_vmrk_find(fullfile(cPATH,[cFILE '.vmrk']),{'bad_step'});
         if ~isempty(ind_dur_ch)
-            badind = find((ind_dur_ch(:,1)+ind_dur_ch(:,2))>size(noise,1));
+            badind = find((ind_dur_ch(:,1) + ind_dur_ch(:,2)) > size(noise,1));
             if ~isempty(badind)
                 disp(['Warning file ' fullfile(cPATH,[cFILE '.vmrk']) ' marker : ' num2str(badind') ' are out of range in the data file'])
-                ind_dur_ch(badind,2)=size(noise,2)- ind_dur_ch(badind,1);
+                ind_dur_ch(badind,2) = size(noise,2)- ind_dur_ch(badind,1);
             end
             for Chan = 1:size(noise,2)
-                mrks = find(ind_dur_ch(:,3)==Chan);
+                mrks = find(ind_dur_ch(:,3) == Chan);
                 ind = ind_dur_ch(mrks,1);
                 indf = ind + ind_dur_ch(mrks,2) - 1;
                 if ~isempty(ind)
@@ -154,7 +156,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     end
                 end
                 if sum(ind_dur_ch([mrks],2))/size(noise,1) > nbtimeminimum
-                    badchY(Chan)=0;
+                    badchY(Chan) = 0;
                 end
             end
         end
@@ -164,42 +166,42 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         
         %FIRST WAVELENGTH ~ HBO
         %Create a Channel regressor list with only the HbO channels!
-        for tt=1:length(chlistRegressor)
-            if wl(chlistRegressor(tt))==1 %check up if only HbO
-                goodhbo(tt)=tt;
+        for tt = 1:length(chlistRegressor)
+            if wl(chlistRegressor(tt)) == 1 %check up if only HbO
+                goodhbo(tt) = tt;
             end
         end
-        CHhbo =chlistRegressor(goodhbo);
+        CHhbo = chlistRegressor(goodhbo); %Regressor list with only HbO channels
         
-        idbad = find(badch( CHhbo )==0|badchY( CHhbo )==0); %remove exclude channel from regressor
+        idbad = find(badch(CHhbo) == 0 | badchY(CHhbo) == 0); 
         if ~isempty(idbad)
-            CHhbo (idbad) = [];
-            if isempty(CHhbo)
+            CHhbo (idbad) = []; %remove excluded channels from regressor list
+            if isempty(CHhbo) %check if there is good channels left in the regressor list
                 disp(['No good channel in the regressor zone please verify your zone ', zone.label{RegZone}])
                 continue
             end
         end
-        data = d(tstart:tstop,CHhbo);
+        data = d(tstart:tstop,CHhbo); %extract the HbO data only from the channels included in the regressor list
         
         %SECOND WAVELENGTH ~ HBR
         CHhbr =  CHhbo + size(d,2)/2;
-        data2 = d(tstart:tstop,CHhbr);
+        data2 = d(tstart:tstop,CHhbr); %select the same channels HbR
         
         %BASELINE CORRECTION
         if ~job.trig %IF RESTING: baseline correction using global mean across time
-            data=data-mean(data,'omitnan');
-            data2=data2-mean(data2,'omitnan');
+            data = data - mean(data,'omitnan');
+            data2 = data2 - mean(data2,'omitnan');
+        
         else %IF TASK-BASED: baseline correction using mean of prestim time
-            for tt=1:length(job.trig)
-              
-                [t1,t2]=find(NIRS.Dt.fir.aux5{f}==job.trig(tt));
+            for tt = 1:length(job.trig)
+                [t1,t2] = find(NIRS.Dt.fir.aux5{f} == job.trig(tt));
                 if t1
-                    trigpos=NIRS.Dt.fir.aux5{f}(t1,t2+1);
+                    trigpos = NIRS.Dt.fir.aux5{f}(t1,t2+1);
                     break
                 end
             end
-            data=data-mean(data(tstart:trigpos,:),'omitnan');
-            data2=data2-mean(data2(tstart:trigpos,:),'omitnan');
+            data = data - mean(data(tstart:trigpos,:),'omitnan');
+            data2 = data2 - mean(data2(tstart:trigpos,:),'omitnan');
         end
         
         %% GLOBAL AVERAGE
@@ -368,58 +370,56 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         %% GLOBAL spatial filtered PCA
         if job.spatialpca
             
-           
-                
-            [filteredD,globalComp,individualComp]=spatialPCA(data,CHhbo,zone,0,0.8);
-            [filteredD2,globalComp2,individualComp2]=spatialPCA(data2,CHhbo,zone,0,0.8); %as hbo and 
+            [filteredD,globalComp,individualComp] = spatialPCA(data,CHhbo,zone,0,0.8); %compute spatial PCA
+            [filteredD2,globalComp2,individualComp2] = spatialPCA(data2,CHhbo,zone,0,0.8); %as hbo and 
                 %hbr have the same spatial position, easier to take the good hbo list instead of the hbr list
             
               AUX.data(:,1) = mean(globalComp,2,'omitnan');
-                AUX.data(:,2) = mean(globalComp2,2,'omitnan'); %2nd wavelength
+              AUX.data(:,2) = mean(globalComp2,2,'omitnan'); %2nd wavelength
                 
             %% WRITE PARCOMP and BETAs
-                tmpbeta(1:NC)=nan;
-                tmpXm(tstart:tstop,1:NC)=nan;
-                tmpXcorr(tstart:tstop,1:NC)=nan;
+                tmpbeta(1:NC) = nan;
+                tmpXm(tstart:tstop,1:NC) = nan;
+                tmpXcorr(tstart:tstop,1:NC) = nan;
                 for CH = 1:numel(CHhbo)
                     tmpbeta(CHhbo(CH)) = dot(AUX.data(:,1),data(:,CH))/dot(AUX.data(:,1),AUX.data(:,1));
-                    tmpXm(:,CHhbo(CH)) =globalComp(:,CH);
-                    tmpXcorr(:,CHhbo(CH)) =filteredD(:,CH);
+                    tmpXm(:,CHhbo(CH)) = globalComp(:,CH);
+                    tmpXcorr(:,CHhbo(CH)) = filteredD(:,CH);
                     %tmpXm(:,CHhbo(CH)) = tmpbeta(CHhbo(CH)).* AUX.data(:,c);
                     %tmpXcorr(:,CHhbo(CH)) = data(:,CH) - tmpXm(:,CHhbo(CH));
                 end
                 for CH = 1:numel(CHhbr)
                     tmpbeta(CHhbr(CH)) = dot(AUX.data(:,2),data2(:,CH))/dot(AUX.data(:,2),AUX.data(:,2));
-                    tmpXm(:,CHhbr(CH)) =globalComp2(:,CH);
-                    tmpXcorr(:,CHhbr(CH)) =filteredD2(:,CH);
+                    tmpXm(:,CHhbr(CH)) = globalComp2(:,CH);
+                    tmpXcorr(:,CHhbr(CH)) = filteredD2(:,CH);
                     %tmpXm(:,CHhbr(CH)) = tmpbeta(CHhbr(CH)).* AUX.data(:,c+job.globalpca);
                     %tmpXcorr(:,CHhbr(CH)) = data2(:,CH) - tmpXm(:,CHhbr(CH));
                 end
                 
-                tmpdata(tstart:tstop,1:NC)=nan;
-                tmpdata(:,CHhbo)=data;
-                tmpdata(:,CHhbr)=data2;
+                tmpdata(tstart:tstop,1:NC) = nan;
+                tmpdata(:,CHhbo) = data;
+                tmpdata(:,CHhbr) = data2;
                 
-                PARCOMP(Prow).file= f;
+                PARCOMP(Prow).file = f;
                 PARCOMP(Prow).filestr =  sprintf('Bl%02.0f', f);
-                PARCOMP(Prow).label= ['SpatialPCA_' PARCOMP(Prow).filestr];
+                PARCOMP(Prow).label = ['SpatialPCA_' PARCOMP(Prow).filestr];
                 PARCOMP(Prow).type = 'GLM';
                 PARCOMP(Prow).beta = tmpbeta;
-                PARCOMP(Prow).std= 0;
-                PARCOMP(Prow).AUX.data= AUX.data;
-                PARCOMP(Prow).AUX.IndividualComp={individualComp, individualComp2};
-                PARCOMP(Prow).AUX.label= {'SpatialPCA HbO' 'SpatialPCA HbR' };
+                PARCOMP(Prow).std = 0;
+                PARCOMP(Prow).AUX.data = AUX.data;
+                PARCOMP(Prow).AUX.IndividualComp = {individualComp, individualComp2};
+                PARCOMP(Prow).AUX.label = {'SpatialPCA HbO' 'SpatialPCA HbR' };
                 PARCOMP(Prow).data = tmpdata ;
                 PARCOMP(Prow).Xm = tmpXm;
                 PARCOMP(Prow).dataCORR = tmpXcorr;
                 PARCOMP(Prow).indt = [tstart :tstop]; %indice de temps.
-                PARCOMP(Prow).listgood =  [CHhbo;CHhbr];
+                PARCOMP(Prow).listgood = [CHhbo;CHhbr];
                 PARCOMP(Prow).module  = lst;
                 PARCOMP(Prow).modulestr = NIRS.Dt.fir.pp(lst).pre;
                 PARCOMP(Prow).ComponentToKeep = 1;
                 PARCOMP(Prow).idreg = 1;
-                PARCOMP(Prow).topo =  tmpbeta(PARCOMP(Prow).ComponentToKeep,:);
-                Prow=Prow+1;
+                PARCOMP(Prow).topo = tmpbeta(PARCOMP(Prow).ComponentToKeep,:);
+                Prow = Prow + 1;
                 clear tmp*
             
         end
@@ -450,22 +450,22 @@ end
 
 %% Calculate channel distance
 
-nchan=length(chlist); %number of channels
-Dist=zeros(nchan); 
-rayon=zeros(nchan);
-for a=1:nchan
-    for b=a+1:nchan
-        rayon(a,b)=sqrt( z.pos(chlist(a),1)^2 + z.pos(chlist(a),2)^2 + z.pos(chlist(a),3)^2);
-        rayon(b,a)=rayon(a,b);
+nchan = length(chlist); %number of channels
+Dist = zeros(nchan); 
+rayon = zeros(nchan);
+for a = 1:nchan %for each channel
+    for b = a+1:nchan %for each channel
+        rayon(a,b) = sqrt(z.pos(chlist(a),1)^2 + z.pos(chlist(a),2)^2 + z.pos(chlist(a),3)^2); %formula of a sphere centered at (0,0,0)
+        rayon(b,a) = rayon(a,b);
         
-        tempdistance=sqrt((z.pos(chlist(a),1)-z.pos(chlist(b),1))^2 + (z.pos(chlist(a),2)-z.pos(chlist(b),2))^2+ (z.pos(chlist(a),3)-z.pos(chlist(b),3))^2);
-        Dist(a,b)=2*rayon(a,b)*asin(tempdistance/(2*rayon(a,b))); %distance matrice between channels (around a sphere)
-        Dist(b,a)=Dist(a,b);
+        tempdistance = sqrt((z.pos(chlist(a),1)-z.pos(chlist(b),1))^2 + (z.pos(chlist(a),2)-z.pos(chlist(b),2))^2+ (z.pos(chlist(a),3)-z.pos(chlist(b),3))^2); %formula of the linear distance between 2 points
+        Dist(a,b) = 2*rayon(a,b)*asin(tempdistance/(2*rayon(a,b))); %distance matrice between channels (around a sphere) %arc = 2piR(angle/360) en unités ou arc = angle*R en rad , sin(angle) = D/R
+        Dist(b,a) = Dist(a,b);
     end
 end
-Dist=real(Dist);
-rayon(rayon==0)=NaN;
-mrayon=mean(rayon,'all','omitnan');  %the mean radius that allowed to measure the arc length distance between channels
+Dist = real(Dist);
+rayon(rayon==0) = NaN;
+mrayon = mean(rayon,'all','omitnan');  %the mean radius that allowed to measure the arc length distance between channels
 
 %% KERNEL SIZE
 % smoothing kernel set to 46 deg (or 0.8 rad) - Zhang et al 2017 (https://doi.org/10.1117/1.NPh.4.4.041409)
@@ -473,9 +473,9 @@ mrayon=mean(rayon,'all','omitnan');  %the mean radius that allowed to measure th
 % convert the kernel (in degrees) into cm (arc length)
 % kernel needs to be in radians (between 0 and 2pi)
 if kernel < 2*pi %kernel in radiam
-    ksigma=kernel*mrayon; %now in cm  
+    ksigma = kernel*mrayon; %now in cm
 else  %kernel in degree
-    ksigma=kernel*pi/180*mrayon; %now in cm  
+    ksigma = kernel*pi/180*mrayon; %now in cm  
 end
 
 %% VERIFY data configuration
@@ -496,16 +496,22 @@ end
 %             each column = a component  // each row = a time point
 %ComponentWeigth = weigth of each component <diagonal matrice>
 %             diagonal coordinates (square, eg. (1,1) (2,2)) = each component
-squareD = D'*D;
-[SpatialSig,ComponentWeigth,~]=svd(squareD);
-TemporalSig = D*SpatialSig*inv(ComponentWeigth);
+squareD = D'*D; %matrix of the data
+
+%verify if there is NaN data
+if isnan(squareD)
+    error('NaN values found. This function does not support NaN values')
+end
+
+[SpatialSig,ComponentWeigth,~] = svd(squareD); %compute PCA
+TemporalSig = D*SpatialSig*inv(ComponentWeigth); %Revert the global component into the temporal space
 
 %% GAUSSIAN SMOOTHING OF THE SPATIAL MATRICE
 SmoothSpatialSig=zeros(size(SpatialSig));
 
-for ci=1:size(SpatialSig,1) %for each channel (row)
-        for cj=1:size(SpatialSig,1)
-            wij(ci,cj)=exp((-(Dist(ci,cj))^2)/(2*ksigma^2)); %calculate the multiplication factor based on the distance between channels ci and cj
+for ci = 1:size(SpatialSig,1) %for each channel (row)
+        for cj = 1:size(SpatialSig,1)
+            wij(ci,cj) = exp((-(Dist(ci,cj))^2)/(2*ksigma^2)); %calculate the multiplication factor based on the distance between channels ci and cj
             %lorsque ci==cj >> wij = 1
         end
         %wij(ci,:)=wij(ci,:)./sum(wij(ci,:)); %TEST1 
@@ -517,16 +523,16 @@ for ci=1:size(SpatialSig,1) %for each channel (row)
         %   their own weigth is larger in proportion to the total.
 
 end
-wij=(wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN. 
+wij = (wij./sum(wij,'all')).*size(SpatialSig,1); %NORMALISATION CHOSEN. 
 % the sum of each column is approx equal to the sum of each column from the
 % initial SpatialSig matrice.
 % It takes the WHOLE MATRICE to do the normalization. therefore the sum of
 % weigths for each channel is not necessarily 1 (the mean sum across channels = 1)
 
-for vv=1:size(SpatialSig,2) %for each component (column)
-        for ci=1:size(SpatialSig,1) %for each channel (row)
-            for cj=1:size(SpatialSig,1)
-            SmoothSpatialSig(ci,vv)= SmoothSpatialSig(ci,vv) + wij(ci,cj)*SpatialSig(cj,vv);
+for vv = 1:size(SpatialSig,2) %for each component (column)
+        for ci = 1:size(SpatialSig,1) %for each channel (row)
+            for cj = 1:size(SpatialSig,1)
+            SmoothSpatialSig(ci,vv) = SmoothSpatialSig(ci,vv) + wij(ci,cj)*SpatialSig(cj,vv);
             if Visualize
                 if vv==1 && ci==16 %help to visualize
                     fprintf('Distance: %0.2f -- kernel: %0.10f\n',Dist(ci,cj),wij(ci,cj));
@@ -536,12 +542,13 @@ for vv=1:size(SpatialSig,2) %for each component (column)
         end
         end
 end
-globalComp=TemporalSig*ComponentWeigth*SmoothSpatialSig';
-filteredD=D-globalComp;
+globalComp = TemporalSig*ComponentWeigth*SmoothSpatialSig';
+filteredD = D - globalComp;
 
-for vv=1:size(SpatialSig,2) 
-individualComp(:,:,vv)=TemporalSig(:,vv)*ComponentWeigth(vv,vv)*SmoothSpatialSig(:,vv)';
+for vv = 1:size(SpatialSig,2) 
+individualComp(:,:,vv) = TemporalSig(:,vv)*ComponentWeigth(vv,vv)*SmoothSpatialSig(:,vv)';
 end
+
 if Visualize
 figure
 subplot(3,1,1)

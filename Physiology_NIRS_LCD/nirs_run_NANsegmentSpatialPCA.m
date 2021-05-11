@@ -16,13 +16,14 @@ fprintf('%s\n','File processed');
 load(job.physzone{1}   ,'-mat');
 ifile = 1; %Utiliser si on remets chaque stim normaliser dans des fichier différent
 
+    %check SelectedFactors file
     [nirsPATH,~,~] = fileparts(job.NIRSmat{1});
     if exist(fullfile(nirsPATH,'SelectedFactors.mat'),'file')
         load(fullfile(nirsPATH,'SelectedFactors.mat'))
-        Prow=length(PARCOMP)+1;
+        Prow = length(PARCOMP)+1;
     else
-        PARCOMP=struct;
-        Prow=1;
+        PARCOMP = struct;
+        Prow = 1;
     end
     
    if isfield(job,'goodPercent')
@@ -32,46 +33,45 @@ ifile = 1; %Utiliser si on remets chaque stim normaliser dans des fichier différ
    end                 % as good, it will segment it as a "block"
                        % to apply spatial PCA
 
+ %% Open the NIRS data
 for f=1:numel(rDtp) %Loop over all files of a NIRS.mat
     d = fopen_NIR(rDtp{f},NC);
     
-    if size(d,1)==NC
+    if size(d,1) == NC
         %do nothing
-    elseif size(d,2)==NC
-        d=permute(d,[2 1]); %organize the data according to Dim1=channels and Dim2 = time
+    elseif size(d,2) == NC
+        d = permute(d,[2 1]); %organize the data according to Dim1=channels and Dim2 = time
     else
         error ('The size of your data does not match the number of channels...')
     end
     
-    nanid=~isnan(d); %identifies with a 1 all data positions that ARE NOT a NAN value
-    nansum=sum(nanid)>(NC*goodPercent); %for each time point, 
-                     % check if you have more valid channels than 
-                     % the cut-off percentage. If so, return a 1 value (if
-                     % not, return a 0 value)
-    nansum=[false nansum false];
-    nandiff=diff(nansum);
-    blockend=find(nandiff==-1)-1;
-    blockstart=find(nandiff==1);
+    nanid = ~isnan(d); %identifies with a 1 all data positions that ARE NOT a NAN value
+    nansum = sum(nanid)>(NC*goodPercent); %for each time point, check if you have more valid channels than 
+                                          %the cut-off percentage. If so, return a 1 value (if not, return a 0 value)
+    nansum = [false nansum false];
+    nandiff = diff(nansum); %compute the difference beteen each tp and its neighbor
+    blockend = find(nandiff==-1)-1;
+    blockstart = find(nandiff==1);
     
     if ~(length(blockstart)==length(blockend))
         error('Not the same length of ID position of blocks onsets and ends')
     end
     
-    newdata =nan(size(d));
-    Xm= nan(size(d));
-    for bl=1:length(blockstart)
-        tempdata=d(:,blockstart(bl):blockend(bl))';
-        temphbo=tempdata(:,1:NC/2);
-        CHhbo=1:NC/2;
-        temphbr=tempdata(:,1+NC/2:NC);
+    newdata = nan(size(d));
+    Xm = nan(size(d));
+    for bl = 1:length(blockstart) %for each block
+        tempdata = d(:,blockstart(bl):blockend(bl))'; %extract each block from the data
+        temphbo = tempdata(:,1:NC/2); %select only HbO channels
+        CHhbo = 1:NC/2;
+        temphbr = tempdata(:,1+NC/2:NC); %select only HbR channels
         
         %check for bad channels
-        goodCHhbo=CHhbo(~(sum(isnan(temphbo))));
-        if goodCHhbo==CHhbo
+        goodCHhbo = CHhbo.*(~(sum(isnan(temphbo)))); %KR use .* instead of indexing
+        if goodCHhbo == CHhbo
             %do nothing
         else
-            temphbo=temphbo(:,goodCHhbo);
-            temphbr=temphbr(:,goodCHhbo);
+            temphbo = temphbo(:,goodCHhbo); %Use only channels without NaN?
+            temphbr = temphbr(:,goodCHhbo);
         end
         [filteredD,globalComp,~]=spatialPCA(temphbo,goodCHhbo,zone,0,0.8);
         [filteredD2,globalComp2,~]=spatialPCA(temphbr,goodCHhbo,zone,0,0.8); %as hbo and

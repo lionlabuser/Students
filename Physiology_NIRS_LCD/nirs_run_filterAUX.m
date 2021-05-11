@@ -86,11 +86,11 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG') %AUX name must contain the word AUX or EEG to be recognized
             fprintf('AUX found in NIRS.mat. Creating new AUX .dat file (downsampled, filtered, normalized)...\n')
             if ~isfield(NIRS.Dt.AUX(iAUX).pp(end),'sync_timesec') %check if there were synchronisation -take the last field
-                disp('No segmentation have been made -- ensure that aux synchronisation are ok')
-                disp('FilterAUX not completed')
+                error('No segmentation have been made -- ensure that aux synchronisation are ok')
+                %disp('FilterAUX not completed')
             else
                 for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p) %For each bloc
-                    nameAUX=NIRS.Dt.AUX(iAUX).pp(end).p{i};
+                    nameAUX = NIRS.Dt.AUX(iAUX).pp(end).p{i};
                     try
                         tstart=NIRS.Dt.AUX(iAUX).pp(end).sync_timesec{i};
                     catch
@@ -107,23 +107,23 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         error('AUX not found in the location, consider using Folder Adjustment')
                     end
                     
-                    fsAUX =1/(infoBV.SamplingInterval/1000000); %Frequence echantillonage Hz
+                    fsAUX = 1/(infoBV.SamplingInterval/1000000); %Frequence echantillonage Hz
                     [~,q] = rat(fs/fsAUX,0.0001); %Ratio des fréquences d'échantillonnage
-                    AUXupdate.ind_dur_ch=auxind_dur_ch((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:); %select only the events during the NIRS recording
-                    AUXupdate.marker=marker((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:);
+                    AUXupdate.ind_dur_ch = auxind_dur_ch((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:); %select only the events during the NIRS recording
+                    AUXupdate.marker = marker((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:);
                     
                     
-                    %% SEGMENT FOR INTERPOLATION: DETERMINE BAD INTERVALS
+                    %% DETERMINE BAD INTERVAL FOR INTERPOLATION
                     %%BASED ON NIRS DATA. taken from the extractcomponent
                     %%function (physiology) and adapted
-                    [nirsdir,nirsname,~] = fileparts(rDtp{i});
-                    nirsvmrk_path = fullfile(nirsdir,[nirsname '.vmrk']);
-                    [nirsind_dur_ch] = read_vmrk_find(nirsvmrk_path,'bad_step'); %trouver tous les intervalles jaunes
-                    mrks = [];
-                    ind = [];
-                    noise =  logical(zeros([size(timeSECaxe,2) NC]));
-                    if ~isempty(nirsind_dur_ch) &&  interpolate == 1 %Si présence de bruit + veut interpoler
-                        maxpoint  = nirsind_dur_ch(:,1) + nirsind_dur_ch(:,2);
+
+                    if interpolate == 1 && ~isempty(nirsind_dur_ch)  %Si présence de bruit + veut interpoler
+                        [nirsdir,nirsname,~] = fileparts(rDtp{i});
+                        nirsvmrk_path = fullfile(nirsdir,[nirsname '.vmrk']);
+                        [nirsind_dur_ch] = read_vmrk_find(nirsvmrk_path,'bad_step'); %trouver tous les intervalles jaunes
+                        mrks = [];
+                        ind = [];
+                        noise =  logical(zeros([size(timeSECaxe,2) NC]));maxpoint  = nirsind_dur_ch(:,1) + nirsind_dur_ch(:,2);
                         badind = find(maxpoint>size(noise,1));
                         if ~isempty(badind)
                             disp(['Warning file ' nirsvmrk_path ' marker : ' num2str(badind') ' are out of range in the data file'])
@@ -139,13 +139,12 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                                         noise(ind(it):indf(it),Idx) = 1;
                                     end
                                 catch
-                                    msgbox('Noise reading problem')
+                                    disp('Noise reading problem')
                                 end
                             end
                         end
                         
-                        % ici group channel with the same noise latency
-                        
+                        %group channel with the same noise latency
                         ind = find((sum(noise,2)./size(noise,2))>0.05);
                         inddiff = diff(ind);
                         
@@ -167,16 +166,13 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         end
                     end
                     
+                    %% DOWNSAMPLE TO THE SAME FS AS NIRS
                     for ich=1:numel(infoBV.name_ele) %Pour chaque AUX
-                        
                         tmp = data(:,ich);
-                        
-                        
-                        %% downsample to the same as fs NIRS
                         rstmp=downsample(tmp,q);
                         
                         %% INTERPOLATION OF BAD INTERVALS
-                        if ~isempty(nirsind_dur_ch) &&  interpolate == 1
+                        if interpolate == 1 && ~isempty(nirsind_dur_ch) 
                             %eventbadstartstop = [idstart,idstop]
                             for sizebad = 1:size(eventbadstartstop,1)
                                 dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1)-2)+1;
@@ -191,7 +187,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                             end
                         end
                         
-                        %% FILTER
+                        %% PADDING
                         if paddingsym
                             d = [fliplr(rstmp);rstmp;fliplr(rstmp)]; %les données sont copiées 3 fois une à la suite de l'autre
                             tstartd = size(rstmp,1)+1;
@@ -205,12 +201,14 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                             d(id) = mean(d,'omitnan');
                         end
                         
+                        %% FILTER 
                         %bandpass
-                        %                         if applylowcut && applyhighcut %band pass (low and high)
-                        %                             W2 = lowcut*2/fs;
-                        %                             W1 = highcut*2/fs;
-                        %                             [fb,fa]=butter(filt_ord,[W1, W2]);
-                        %                             dfilt = filtfilt(fb,fa,d);
+                        %if applylowcut && applyhighcut %band pass (low and high)
+                        %W2 = lowcut*2/fs;
+                        %W1 = highcut*2/fs;
+                        %[fb,fa]=butter(filt_ord,[W1, W2]);
+                        %dfilt = filtfilt(fb,fa,d);
+                        
                         if applylowcut==true %&& applyhighcut==false %only low pass
                             Wn = lowcut*2/fs;
                             [fb,fa]=butter(filt_ord,Wn);
@@ -233,10 +231,10 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         
                         %END OF FILTER SECTION
                         
-                        %% normalize the AUX data (z score)
+                        %% NORMALIZE AUX data (z score)
                         tmpn=(dfilt-mean(dfilt))/std(dfilt);
                         
-                        % we cut aux to the data initial size
+                        %% CUTTING AUX to the data initial size
                         if numel(tmpn)<numel(timeSECaxe)
                             nplus = numel(timeSECaxe)-numel(tmpn);
                             try
@@ -255,7 +253,8 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         
                         dataNEW(:,ich)=tmpn;
                     end
-                    %OVERWRITE INFOS in infoBV
+                    
+                    %% OVERWRITE INFOS in infoBV
                     infoBV.DataPoints=size(dataNEW,1);
                     infoBV.SamplingInterval=(1/fs)*1000000;
                     

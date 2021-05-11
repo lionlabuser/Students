@@ -3,10 +3,11 @@
 fileXLS = 'C:\data\Malnutrition\Resting\NIRS\DocumentInfo\ReadDataRestMal.xlsx';
 
 FolderAdjustment = 0;
-AUXPHYSIOLOGY=1; %if you dont want, put 0
-GLOBALPHYSIOLOGY=1; %if you dont want, put 0
-WHOLEsPCA=0; %if you dont want, put 0
-VIEWplotGLOBALphys=1; %if you dont want, put 0
+FilterAUX = 0;
+AUXPHYSIOLOGY = 0; %if you dont want, put 0
+GLOBALPHYSIOLOGY = 1; %if you dont want, put 0
+WHOLEsPCA = 0; %if you dont want, put 0
+VIEWplotGLOBALphys = 1; %if you dont want, put 0
 
 %paths={'C:\data\Malnutrition\Resting\NIRS\G10115\DetectAuto\DetectManual\Filter0,01_0,08_dCONC\'};
 %multimodalDirectory= {'C:\data\Malnutrition\Resting\NIRS\Multimodal\'};
@@ -23,24 +24,25 @@ VIEWplotGLOBALphys=1; %if you dont want, put 0
 
 
 % ------------ parameters to adjust for AUXPHYSIOLOGY
-jobA.outAUXfolder='filAUX'; %for nirs_run_filterAUX
-jobA.copynirs=1; %for nirs_run_filterAUX
-jobA.covariables='Sat,Resp'; %for nirs_run_GLM_regressAUX
-jobA.e_NIRSmatdirnewbranch='SatResp'; %name of the new branch to create
+jobA.outAUXfolder = 'filAUX'; %for nirs_run_filterAUX
+jobA.copynirs = 1; %for nirs_run_filterAUX
+jobA.covariables = 'Sat,Resp'; %for nirs_run_GLM_regressAUX
+jobA.e_NIRSmatdirnewbranch = 'SatResp'; %name of the new branch to create
 
 %------------- parameters for GLOBALPHYSIOLOGY
 jobG.trig = [0]; %for nirs_run_GlobalPhysio % 0 for resting OR trig number for task
 jobG.globalavg = 0; %for nirs_run_GlobalPhysio
 jobG.globalpca = 0; %for nirs_run_GlobalPhysio
 jobG.spatialpca = 1; %for nirs_run_GlobalPhysio
+jobG.goodPercent = 0.5;
 jobG.e_NIRSmatdirnewbranch='SpatialPCA';%name of the new branch to create
 
 %------------- parameters for WHOLEsPCA
 jobW.goodPercent = 0.5;
-jobW.e_NIRSmatdirnewbranch='SpatialPCA';%name of the new branch to create
+jobW.e_NIRSmatdirnewbranch = 'SpatialPCA';%name of the new branch to create
 
 %------------- parameters for VIEWplotGLOBALphys
-PhysioLabels4FIGURES={'SatResp' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
+PhysioLabels4FIGURES = {'SatResp' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
 
 %%%%%%%%%%%%%%%%%%%%%%%%%  end  %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,7 +88,10 @@ for isubject=2:size(raw,1)
             %% filter AUX and extract regressed data
             jobA.NIRSmat = NIRSmat; %modify
             
-            nirs_run_filterAUX(jobA); %run script
+            if FilterAUX == 1
+                nirs_run_filterAUX(jobA); %run script
+            end
+            
             nirs_run_GLM_regressAUX(jobA); %run script
             
             %% new branch + save corrected data
@@ -111,7 +116,8 @@ for isubject=2:size(raw,1)
             jobG.NIRSmat = NIRSmat; %modify
             jobG.multimodalPATH = {[fileparts(raw{isubject,iaux}) '\AUXglobal']};
             
-            nirs_run_GlobalPhysio(jobG) %run script
+            %nirs_run_GlobalPhysio(jobG) %run script
+            nirs_run_NANsegmentSpatialPCA(jobG) %run script
             
             %% new branch + save corrected data
             %create new branch
@@ -161,42 +167,46 @@ for isubject=2:size(raw,1)
             %here is the script to visualize the Original data - Global
             %component - corrected data. nothing else to adapt
             load([path 'SelectedFactors.mat'])
-            for gc=1:length(physiolabels)
-                idrow{gc}=find(contains({PARCOMP.label},physiolabels{gc}));
+            for gc = 1:length(physiolabels)
+                idrow{gc} = find(contains({PARCOMP.label},physiolabels{gc})); %find the physio correction in PARCOMP
             end
             
-            NC=size(PARCOMP(idrow{1}(1)).data,2)/2; %number of HBO channels
-            NT=size(PARCOMP(idrow{1}(1)).data,1);
-            for q=1:length(idrow{1})
-                yy=[];
-                figg=figure('units','normalized','outerposition',[0 0 1 1]);
-                figg=tiledlayout(length(physiolabels),3,'TileSpacing','Compact','Padding','Compact');
+            NC = size(PARCOMP(idrow{1}(1)).data,2)/2; %number of HBO channels
+            NT = size(PARCOMP(idrow{1}(1)).data,1); %number of time points
+            for q = 1:length(idrow{1})
+                yy = [];
+                figg = figure('units','normalized','outerposition',[0 0 1 1]);
+                figg = tiledlayout(length(physiolabels),3,'TileSpacing','Compact','Padding','Compact');
                 
-                for gc=1:length(physiolabels)
-                    tr=idrow{gc}(q);
-                    nexttile;
-                    plot(PARCOMP(tr).data(:,1:NC));
-                    ylabel(physiolabels{gc},'fontweight','bold','FontSize',14);
-                    if gc==1
-                        title('HBO initial data');
+                for gc = 1:length(physiolabels)
+                    try
+                        tr = idrow{gc}(q);
+                        nexttile;
+                        plot(PARCOMP(tr).data(:,1:NC));
+                        ylabel(physiolabels{gc},'fontweight','bold','FontSize',14);
+                        if gc == 1
+                            title('HBO initial data');
+                        end
+                        yy = [yy ylim];
+                        
+                        nexttile;
+                        plot(PARCOMP(tr).Xm(:,1:NC));
+                        hold on
+                        plot(mean(PARCOMP(tr).Xm(:,1:NC),2,'omitnan'),'Color','k','LineWidth',2);
+                        yy=[yy ylim];
+                        if gc==1
+                            title('Global component (GC)');
+                        end
+                        
+                        nexttile;
+                        plot(PARCOMP(tr).dataCORR(:,1:NC));
+                        if gc==1
+                            title('Corrected data (GC subtracted)');
+                        end
+                        yy=[yy ylim];
+                    catch
+                        break
                     end
-                    yy=[yy ylim];
-                    
-                    nexttile;
-                    plot(PARCOMP(tr).Xm(:,1:NC));
-                    hold on
-                    plot(mean(PARCOMP(tr).Xm(:,1:NC),2,'omitnan'),'Color','k','LineWidth',2);
-                    yy=[yy ylim];
-                    if gc==1
-                        title('Global component (GC)');
-                    end
-                    
-                    nexttile;
-                    plot(PARCOMP(tr).dataCORR(:,1:NC));
-                    if gc==1
-                        title('Corrected data (GC subtracted)');
-                    end
-                    yy=[yy ylim];
                 end
                 
                 %adjust the Y limits so that all are the same!
@@ -233,3 +243,5 @@ catch
     xlswrite(fullfile(filepath,['ERROR_OPENXLS',name,ext]),raw);
     disp(['ERROR XLS IS OPEN LOOK AT ', fullfile(filepath,['ERROR_OPENXLS',name,ext])])
 end
+
+clear
