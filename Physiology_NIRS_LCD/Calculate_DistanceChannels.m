@@ -27,17 +27,17 @@ nchan=size(zone.pos,1)/2; %number of channels
    
 ChanDistanceLIN=zeros(nchan);
 ChanDistanceARC=zeros(nchan);
-for a=1:nchan
-    for b=a+1:nchan
-        
-        ChanDistanceLIN(a,b)=sqrt( (zone.pos(a,1)-zone.pos(b,1))^2 + (zone.pos(a,2)-zone.pos(b,2))^2+ (zone.pos(a,3)-zone.pos(b,3))^2);
-        ChanDistanceLIN(b,a)=ChanDistanceLIN(a,b);
-        
-        rayon(a,b)=sqrt( zone.pos(a,1)^2 + zone.pos(a,2)^2 + zone.pos(a,3)^2);
-        rayon(b,a)=rayon(a,b);
-        ChanDistanceARC(a,b)=2*rayon(a,b)*asin(ChanDistanceLIN(a,b)/(2*rayon(a,b)));
-        ChanDistanceARC(b,a)=ChanDistanceARC(a,b);
-    end
+for a=1:goodHbO%nchan
+%     for b=a+1:nchan
+%         
+%         ChanDistanceLIN(a,b)=sqrt( (zone.pos(a,1)-zone.pos(b,1))^2 + (zone.pos(a,2)-zone.pos(b,2))^2+ (zone.pos(a,3)-zone.pos(b,3))^2);
+%         ChanDistanceLIN(b,a)=ChanDistanceLIN(a,b);
+%         
+%         rayon(a,b)=sqrt( zone.pos(a,1)^2 + zone.pos(a,2)^2 + zone.pos(a,3)^2);
+%         rayon(b,a)=rayon(a,b);
+%         ChanDistanceARC(a,b)=2*rayon(a,b)*asin(ChanDistanceLIN(a,b)/(2*rayon(a,b)));
+%         ChanDistanceARC(b,a)=ChanDistanceARC(a,b);
+%     end
     ChanSDseparation(a)=zone.pos(a,4); 
     ChanXYZ(a,:)=zone.pos(a,1:3);
 end
