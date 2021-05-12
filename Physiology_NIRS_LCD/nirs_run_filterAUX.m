@@ -12,6 +12,7 @@ function out = nirs_run_filterAUX(job)
 %          + job.outAUXfolder=string array (the new folder name for
 %          filterAUX)
 outAUXfolder=job.outAUXfolder;
+AUXcolor={[0 0.4470 0.7410],[0.6350 0.0780 0.1840],[0.4660 0.6740 0.1880],[0.4940 0.1840 0.5560]};
 for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     %Load NIRS.mat information
     NIRS = [];
@@ -57,6 +58,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         else
             paddingsym =job.fparameters.paddingsym;
         end
+        
         if  contains(job.fparameters.interpolate,'same')
             interpolate = NIRS.Dt.fir.pp(fstep).job.interpolatebadfilter;  %interpolate bad intervals
         else
@@ -69,6 +71,20 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
             filt_ord = job.fparameters.filt_ord;
         end
     end
+
+    %new parameters for interpolation 
+    if isfield(job,'newparameters') %job.newparameters.interp_mode=  ;
+        if isfield(job.newparameters,'interp_mode') 
+            %1= for linear fit between start and end of bad segment
+            %2= replace bad segments with the average of the block (good
+            %portion without artifact)
+            interp_mode=job.newparameters.interp_mode;
+        else
+            interp_mode=1; 
+        end
+    else
+        interp_mode=1;
+    end
     
     %use last step of preprocessing
     lst = length(NIRS.Dt.fir.pp); %list of preprocessing steps
@@ -80,21 +96,60 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         error('No auxiliary attached to the NIRS file %s\nCheck in your NIRS.mat file... is there a <AUX> field in NIRS.Dt?\n', (job.NIRSmat{1}))
     end
     
+    if max(contains({NIRS.Dt.AUX.label}, 'fil'))
+        answer = questdlg('Filtered AUX already computed, what do you want to do?','Warning','Overwrite','Stop Execution','Stop Execution');
+        switch answer
+            case 'Overwrite'
+                filoverwrite = 1;
+                ifilAUX = find(contains({NIRS.Dt.AUX.label}, 'fil'));
+            case 'Stop Execution'
+                return
+        end
+    end
+    
     %% get AUX data + load for each block
     for iAUX = 1:numel(NIRS.Dt.AUX) %For each AUX
-        newAUX=numel(NIRS.Dt.AUX)+1;
-        if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG') %AUX name must contain the word AUX or EEG to be recognized
+        if ~exist('filoverwrite','var')
+            newAUX = numel(NIRS.Dt.AUX)+1;
+        else
+            newAUX = ifilAUX;
+        end
+        if contains(NIRS.Dt.AUX(iAUX).label,'AUX') && ~contains(NIRS.Dt.AUX(iAUX).label,'fil') || contains(NIRS.Dt.AUX(iAUX).label,'EEG') && ~contains(NIRS.Dt.AUX(iAUX).label,'fil') %AUX name must contain the word AUX or EEG to be recognized
             fprintf('AUX found in NIRS.mat. Creating new AUX .dat file (downsampled, filtered, normalized)...\n')
+
             if ~isfield(NIRS.Dt.AUX(iAUX).pp(end),'sync_timesec') %check if there were synchronisation -take the last field
-                error('No segmentation have been made -- ensure that aux synchronisation are ok')
-                %disp('FilterAUX not completed')
+                error('No data segmentation has been made -- ensure that aux synchronisation is ok')
+                %disp('FilterAUX not completed') KR change
             else
+                                
+                %%%%%%%%%%plot
+                figg = figure('units','normalized','outerposition',[0 0 1 1]);
+                %sizefig = ceil(length(NIRS.Dt.AUX(iAUX).pp(end).p)/4);
+                nfig = 1;
+                %%%%%%%%%%plot
+                
                 for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p) %For each bloc
+                    
+%                     %%%%%%%%%%plot, 1 tile for each bloc
+%                     if i==(7*4+1) || i==(7*4*2+1)
+%                         saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.fig'])
+%                         saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.png'])
+%                         close
+%                         clear figg
+%                         figg = figure('units','normalized','outerposition',[0 0 1 1]);
+%                         sizefig = ceil(length(NIRS.Dt.AUX(iAUX).pp(end).p)/4);
+%                         figg = tiledlayout(7,4,'TileSpacing','Compact','Padding','Compact');
+%                         nfig = nfig + 1;
+%                     end
+                    %%%%%%%%%%plot
+                    
                     nameAUX = NIRS.Dt.AUX(iAUX).pp(end).p{i};
+                    moduleaux = numel(NIRS.Dt.AUX(iAUX).pp);
                     try
                         tstart=NIRS.Dt.AUX(iAUX).pp(end).sync_timesec{i};
                     catch
                         tstart = 0;
+                        disp('Warning! Synchronization time not found. Automatically set to 0')
                     end
                     
                     timeSECaxe = (1/fs):(1/fs):(NIRS.Dt.fir.sizebloc{i}*1/fs);
@@ -112,6 +167,15 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     AUXupdate.ind_dur_ch = auxind_dur_ch((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:); %select only the events during the NIRS recording
                     AUXupdate.marker = marker((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:);
                     
+                    %%%%%%%%%%plot%%%%%%
+                    xnb = numel(infoBV.name_ele);
+                    ynb = length(NIRS.Dt.AUX(iAUX).pp(end).p);
+                    if ynb == 1
+                        ynb = ynb*2;
+                        xnb = xnb/2;
+                    end
+                    figg = tiledlayout(xnb,ynb,'TileSpacing','Compact','Padding','Compact');
+                    %%%%%%%%%%plot%%%%%%
                     
                     %% DETERMINE BAD INTERVAL FOR INTERPOLATION
                     %%BASED ON NIRS DATA. taken from the extractcomponent
@@ -145,11 +209,11 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         end
                         
                         %group channel with the same noise latency
-                        ind = find((sum(noise,2)./size(noise,2))>0.05);
+                        ind = find((sum(noise,2)./size(noise,2))>0.5);
                         inddiff = diff(ind);
                         
-                        if isempty(ind)
-                            disp(['No specific noisy event found in file '])
+                        if isempty(ind) %disp(['No specific noisy event found in file '])
+                            
                             eventbadstartstop = [] ;
                         else
                             idsep = find(inddiff>1);
@@ -162,34 +226,67 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                             end
                             
                             % add event start
+                            %%start bad event 2 data points before in AUX (when possible!)
+                            idstart=idstart-2;
+                            idstart(idstart<1)=1;
                             eventbadstartstop = [idstart,idstop] ;
                         end
                     end
                     
                     %% DOWNSAMPLE TO THE SAME FS AS NIRS
-                    for ich=1:numel(infoBV.name_ele) %Pour chaque AUX
+                    for ich=1:numel(infoBV.name_ele) %Pour chaque canal dans les AUX
+                        nexttile;
                         tmp = data(:,ich);
                         rstmp=downsample(tmp,q);
+                        
+                        %% NORMALIZE AUX data (z score)
+                        rstmp=(rstmp-mean(rstmp))/std(rstmp);
+                        
+                        %%%%%%%%%%plot                    
+                        plot(rstmp,'color',AUXcolor{ich},'linewidth',.6);
+                        titleAUX = infoBV.name_ele{ich};
+                        title(titleAUX)
+                        hold on;
+                        %%%%%%%%%%plot
                         
                         %% INTERPOLATION OF BAD INTERVALS
                         if interpolate == 1 && ~isempty(nirsind_dur_ch) 
                             %eventbadstartstop = [idstart,idstop]
-                            for sizebad = 1:size(eventbadstartstop,1)
-                                dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1)-2)+1;
-                                y1=rstmp((eventbadstartstop(sizebad,1)-2));
-                                y2=rstmp(eventbadstartstop(sizebad,2));
-                                interval = (eventbadstartstop(sizebad,1)-2):eventbadstartstop(sizebad,2);
-                                %y = ax + b
-                                a = (y2-y1)/dur;
-                                b = y1 - a*(eventbadstartstop(sizebad,1)-2);
-                                interp = a.*interval + b;
-                                rstmp(interval) = interp;
-                            end
+                           if interp_mode==1 %linear fit %original script
+                                %eventbadstartstop = [idstart,idstop]
+                                for sizebad = 1:size(eventbadstartstop,1)
+                                    dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1))+1;
+                                    y1=rstmp((eventbadstartstop(sizebad,1)));
+                                    y2=rstmp(eventbadstartstop(sizebad,2));
+                                    interval = (eventbadstartstop(sizebad,1)):eventbadstartstop(sizebad,2);
+                                    %y = ax + b
+                                    a = (y2-y1)/dur;
+                                    b = y1 - a*(eventbadstartstop(sizebad,1));
+                                    interp = a.*interval + b;
+                                    rstmp(interval) = interp;
+                                end
+                                
+                           elseif interp_mode==2 %average
+                                for sizebad = 1:size(eventbadstartstop,1)
+                                    dur = eventbadstartstop(sizebad,2)-(eventbadstartstop(sizebad,1))+1;
+                                    y1=rstmp((eventbadstartstop(sizebad,1)));
+                                    y2=rstmp(eventbadstartstop(sizebad,2));
+                                    interval = (eventbadstartstop(sizebad,1)):eventbadstartstop(sizebad,2);
+                                    goodinterval=rstmp([1:eventbadstartstop(sizebad,1) eventbadstartstop(sizebad,2):end]);
+                                    rstmp(interval) = mean(goodinterval);
+                                end  
+                           end
                         end
+                        
+                        %%%%%%%%%%plot                    
+                        plot(rstmp,'color',AUXcolor{ich}+.1,'linewidth',.6);
+                        hold on;
+                        %%%%%%%%%%plot
                         
                         %% PADDING
                         if paddingsym
-                            d = [fliplr(rstmp);rstmp;fliplr(rstmp)]; %les données sont copiées 3 fois une à la suite de l'autre
+                            d = [fliplr(rstmp') rstmp' fliplr(rstmp')]; %les données sont copiées 3 fois une à la suite de l'autre
+                            d=d';
                             tstartd = size(rstmp,1)+1;
                             tstopd = size(rstmp,1)*2;
                         else
@@ -228,11 +325,15 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                             dfilt = dfilt(tstartd:tstopd);
                         end
                         
-                        
                         %END OF FILTER SECTION
                         
-                        %% NORMALIZE AUX data (z score)
-                        tmpn=(dfilt-mean(dfilt))/std(dfilt);
+                        %%%%%%%%%%plot              
+                        plot(dfilt,'color',AUXcolor{ich}+.2,'linewidth',1.5);
+                        hold on;
+                        xlim([0 numel(timeSECaxe)])
+                        %%%%%%%%%%plot
+                        
+                        tmpn = dfilt; %tmpn=(dfilt-mean(dfilt))/std(dfilt);
                         
                         %% CUTTING AUX to the data initial size
                         if numel(tmpn)<numel(timeSECaxe)
@@ -251,26 +352,52 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                             tmpn = tmpn(1:numel(timeSECaxe));
                         end
                         
-                        dataNEW(:,ich)=tmpn;
+                        dataNEW(:,ich) = tmpn;
+
+                    %%%%%%%%%%plot
+                    if sum(NIRS.Cf.H.C.ok(:,i),'all')<=10
+                        text(.95,.9,['bad block #' num2str(i)],'HorizontalAlignment','right','units','normalized')
+                    else
+                        text(.95,.9,['block #' num2str(i)],'HorizontalAlignment','right','units','normalized')
+                    end
+                    
+                    yytemp = ylim;
+                    if yytemp(1)<-5 && yytemp(2)>5
+                        ylim([-5 5]);
+                    elseif yytemp(1)<-5
+                        ylim([-5 yytemp(2)]);
+                    elseif yytemp(2)>5
+                        ylim([yytemp(1) 5]);
+                    end
+                    %%%%%%%%%%plot
+                    
                     end
                     
                     %% OVERWRITE INFOS in infoBV
+                    
                     infoBV.DataPoints=size(dataNEW,1);
                     infoBV.SamplingInterval=(1/fs)*1000000;
                     
-                    AUXupdate.infoBV=infoBV;
-                    AUXupdate.data=dataNEW;
+                    AUXupdate.infoBV = infoBV;
+                    AUXupdate.data = dataNEW;
                     
                     if ~exist([cPATH filesep outAUXfolder filesep],'dir')
                         mkdir([cPATH filesep outAUXfolder filesep])
                     end
-                    fileoutAUX=[cPATH filesep outAUXfolder filesep cFILE 'b' num2str(i) cEXT];
+                    fileoutAUX = [cPATH filesep outAUXfolder filesep cFILE 'b' num2str(i) cEXT];
                     fwrite_EEG(fileoutAUX,AUXupdate,1,AUXupdate.infoBV.DataPoints );
                     disp(fileoutAUX)
-                    NIRS.Dt.AUX(newAUX).pp.p{i,1}=fileoutAUX;
-                    NIRS.Dt.AUX(newAUX).pp.sync_timesec{i,1}=0;
+                    NIRS.Dt.AUX(newAUX).pp(moduleaux).p{i,1} = fileoutAUX;
+                    NIRS.Dt.AUX(newAUX).pp(moduleaux).sync_timesec{i,1} = 0;
                 end
                 NIRS.Dt.AUX(newAUX).label = ['fil' NIRS.Dt.AUX(iAUX).label ];
+                
+                %%%%%%%%%%plot savefig
+                saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.fig'])
+                saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.png'])
+                close
+                clear figg
+                %%%%%%%%%%plot
                 
             end
         end

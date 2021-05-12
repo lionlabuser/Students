@@ -4,10 +4,10 @@ fileXLS = 'C:\data\Malnutrition\Resting\NIRS\DocumentInfo\ReadDataRestMal.xlsx';
 
 FolderAdjustment = 0;
 FilterAUX = 0;
-AUXPHYSIOLOGY = 0; %if you dont want, put 0
-GLOBALPHYSIOLOGY = 1; %if you dont want, put 0
+AUXPHYSIOLOGY = 1; %if you dont want, put 0
+GLOBALPHYSIOLOGY = 0; %if you dont want, put 0
 WHOLEsPCA = 0; %if you dont want, put 0
-VIEWplotGLOBALphys = 1; %if you dont want, put 0
+VIEWplotGLOBALphys = 0; %if you dont want, put 0
 
 %paths={'C:\data\Malnutrition\Resting\NIRS\G10115\DetectAuto\DetectManual\Filter0,01_0,08_dCONC\'};
 %multimodalDirectory= {'C:\data\Malnutrition\Resting\NIRS\Multimodal\'};
@@ -26,8 +26,8 @@ VIEWplotGLOBALphys = 1; %if you dont want, put 0
 % ------------ parameters to adjust for AUXPHYSIOLOGY
 jobA.outAUXfolder = 'filAUX'; %for nirs_run_filterAUX
 jobA.copynirs = 1; %for nirs_run_filterAUX
-jobA.covariables = 'Sat,Resp'; %for nirs_run_GLM_regressAUX
-jobA.e_NIRSmatdirnewbranch = 'SatResp'; %name of the new branch to create
+jobA.covariables = 'Sat,Resp,EOG,EKG'; %for nirs_run_GLM_regressAUX
+jobA.e_NIRSmatdirnewbranch = 'SatRespEOGEKG'; %name of the new branch to create
 
 %------------- parameters for GLOBALPHYSIOLOGY
 jobG.trig = [0]; %for nirs_run_GlobalPhysio % 0 for resting OR trig number for task
@@ -84,18 +84,17 @@ for isubject=2:size(raw,1)
             nirs_run_NIRSmatdiradjust(jobF) %run script
         end
         
-        if AUXPHYSIOLOGY==1
+        if FilterAUX == 1
+           jobA.NIRSmat = NIRSmat; %modify            
+           nirs_run_filterAUX(jobA); %run script
+        end
+        
+        if AUXPHYSIOLOGY == 1
             %% filter AUX and extract regressed data
-            jobA.NIRSmat = NIRSmat; %modify
-            
-            if FilterAUX == 1
-                nirs_run_filterAUX(jobA); %run script
-            end
-            
+            jobA.NIRSmat = NIRSmat; %modify 
             nirs_run_GLM_regressAUX(jobA); %run script
             
             %% new branch + save corrected data
-            
             jobA.m_newbranchcomponent=1; %1 if copy paste SelectedFactors.mat and CorrectionApply.mat
             jobA2=nirs_run_NIRSmatcreatenewbranch(jobA); %run script
             
@@ -125,12 +124,12 @@ for isubject=2:size(raw,1)
             jobG2=nirs_run_NIRSmatcreatenewbranch(jobG);%run script
             
             %overwrite nirs data with the corrected data
-            jobG2.globalmethod=jobA.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
+            jobG2.globalmethod=jobG.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable A changé pour G
             jobG2.DelPreviousData=0;
             nirs_writeNIR_aftercorr(jobG2);
             
             %suppress SelectedFactors.mat file in the new directory
-            directory=fileparts(jobG2.NIRSmat{1});
+            directory = fileparts(jobG2.NIRSmat{1});
             delete([directory filesep 'SelectedFactors.mat'])
             clear job*
         end
@@ -146,16 +145,16 @@ for isubject=2:size(raw,1)
             
             %% new branch + save corrected data
             %create new branch
-            jobW.m_newbranchcomponent=1;
-            jobW2=nirs_run_NIRSmatcreatenewbranch(jobW);%run script
+            jobW.m_newbranchcomponent = 1;
+            jobW2 = nirs_run_NIRSmatcreatenewbranch(jobW);%run script
             
             %overwrite nirs data with the corrected data
-            jobW2.globalmethod=jobW.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
-            jobW2.DelPreviousData=0;
+            jobW2.globalmethod = jobW.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
+            jobW2.DelPreviousData = 0;
             nirs_writeNIR_aftercorr(jobW2);
             
             %suppress SelectedFactors.mat file in the new directory
-            directory=fileparts(jobW2.NIRSmat{1});
+            directory = fileparts(jobW2.NIRSmat{1});
             delete([directory filesep 'SelectedFactors.mat'])
             %clear job*
         end
@@ -223,6 +222,7 @@ for isubject=2:size(raw,1)
                 saveas(figg,[path 'GC_figure\HBO_B' num2str(PARCOMP(tr).file) '.fig'])
                 saveas(figg,[path 'GC_figure\HBO_B'  num2str(PARCOMP(tr).file) '.png'])
                 
+                %close
                 clear figg yy
                 
             end
