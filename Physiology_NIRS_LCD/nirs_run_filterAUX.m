@@ -11,12 +11,14 @@ function out = nirs_run_filterAUX(job)
 %            eg.job.NIRSmat={'C:...\NIRS.mat'};
 %          + job.outAUXfolder=string array (the new folder name for
 %          filterAUX)
-outAUXfolder=job.outAUXfolder;
-AUXcolor={[0 0.4470 0.7410],[0.6350 0.0780 0.1840],[0.4660 0.6740 0.1880],[0.4940 0.1840 0.5560]};
+outAUXfolder = job.outAUXfolder;
+AUXcolor = {[0 0.4470 0.7410],[0.6350 0.0780 0.1840],[0.4660 0.6740 0.1880],[0.4940 0.1840 0.5560]};
 for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     %Load NIRS.mat information
     NIRS = [];
     load(job.NIRSmat{1});
+    
+    disp(['Computing AUX filtering for ' NIRS.Dt.s.p(end-6:end-1)])
     
     %Find the filter step to make sure data has been filtered
     liststeps={NIRS.Dt.fir.pp.pre};

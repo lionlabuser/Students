@@ -7,7 +7,7 @@ FilterAUX = 0;
 AUXPHYSIOLOGY = 1; %if you dont want, put 0
 GLOBALPHYSIOLOGY = 0; %if you dont want, put 0
 WHOLEsPCA = 0; %if you dont want, put 0
-VIEWplotGLOBALphys = 0; %if you dont want, put 0
+VIEWplot = 0; %if you dont want, put 0
 
 %paths={'C:\data\Malnutrition\Resting\NIRS\G10115\DetectAuto\DetectManual\Filter0,01_0,08_dCONC\'};
 %multimodalDirectory= {'C:\data\Malnutrition\Resting\NIRS\Multimodal\'};
@@ -42,7 +42,7 @@ jobW.goodPercent = 0.5;
 jobW.e_NIRSmatdirnewbranch = 'SpatialPCA';%name of the new branch to create
 
 %------------- parameters for VIEWplotGLOBALphys
-PhysioLabels4FIGURES = {'SatResp' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
+PhysioLabels4FIGURES = {'SatRespEOGEKG' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
 
 %%%%%%%%%%%%%%%%%%%%%%%%%  end  %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -85,32 +85,39 @@ for isubject=2:size(raw,1)
         end
         
         if FilterAUX == 1
+            %% filter AUX
            jobA.NIRSmat = NIRSmat; %modify            
            nirs_run_filterAUX(jobA); %run script
         end
         
         if AUXPHYSIOLOGY == 1
-            %% filter AUX and extract regressed data
+            %%extract AUX regressed data
             jobA.NIRSmat = NIRSmat; %modify 
             nirs_run_GLM_regressAUX(jobA); %run script
             
-            %% new branch + save corrected data
-            jobA.m_newbranchcomponent=1; %1 if copy paste SelectedFactors.mat and CorrectionApply.mat
-            jobA2=nirs_run_NIRSmatcreatenewbranch(jobA); %run script
+             %%create new branch
+            jobA.m_newbranchcomponent = 1; %1 if copy paste SelectedFactors.mat and CorrectionApply.mat
+            jobA2 = nirs_run_NIRSmatcreatenewbranch(jobA); %run script (create new folder + copy NIRS, SelectedFactors)
+            dir1 = fileparts(jobA.NIRSmat{1});
+            dir2 = fileparts(jobA2.NIRSmat{1});
+            flist = dir(fullfile(dir1));
+            tf = contains({flist.name},'Physio');
+            for n = 1:nnz(tf)
+                idx = find(tf);
+            movefile(fullfile(flist(idx(n)).folder, flist(idx(n)).name),dir2)
+            end
             
-            jobA2.globalmethod=jobA.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
-            jobA2.DelPreviousData=0;
+            %overwrite nirs data with the corrected data
+            jobA2.globalmethod = jobA.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
+            jobA2.DelPreviousData = 0;
             nirs_writeNIR_aftercorr(jobA2);%run script
             
-            %suppress SelectedFactors.mat file in the new directory
-            directory=fileparts(jobA2.NIRSmat{1});
-            delete([directory filesep 'SelectedFactors.mat'])
+            %%suppress SelectedFactors.mat file in the new directory
+            delete([dir2 filesep 'SelectedFactors.mat'])
         end
         
         if GLOBALPHYSIOLOGY==1
-            
             %% run global physio + extract regressed data
-            
             jobG.physzone = {raw{isubject,izoneaux}};
             jobG.NIRSmat = NIRSmat; %modify
             jobG.multimodalPATH = {[fileparts(raw{isubject,iaux}) '\AUXglobal']};
@@ -118,7 +125,6 @@ for isubject=2:size(raw,1)
             %nirs_run_GlobalPhysio(jobG) %run script
             nirs_run_NANsegmentSpatialPCA(jobG) %run script
             
-            %% new branch + save corrected data
             %create new branch
             jobG.m_newbranchcomponent=1;
             jobG2=nirs_run_NIRSmatcreatenewbranch(jobG);%run script
@@ -135,15 +141,11 @@ for isubject=2:size(raw,1)
         end
         
         if WHOLEsPCA==1
-            
             %% run SpatialPCA based on NAN segmentation + extract regressed data
-            
             jobW.physzone = {raw{isubject,izoneaux}};
             jobW.NIRSmat = NIRSmat; %modify
-            
             nirs_run_NANsegmentSpatialPCA(jobW) %run script
             
-            %% new branch + save corrected data
             %create new branch
             jobW.m_newbranchcomponent = 1;
             jobW2 = nirs_run_NIRSmatcreatenewbranch(jobW);%run script
@@ -159,7 +161,7 @@ for isubject=2:size(raw,1)
             %clear job*
         end
         
-        if VIEWplotGLOBALphys==1
+        if VIEWplot==1
             
             physiolabels=PhysioLabels4FIGURES;
             

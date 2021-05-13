@@ -25,28 +25,35 @@ function out = nirs_run_GLM_regressAUX(job)
 
 load(job.NIRSmat{1});
 %use last step of preprocessing
-lst = length(NIRS.Dt.fir.pp);
+lst = length(NIRS.Dt.fir.pp); %list of preprocessing steps
 rDtp = NIRS.Dt.fir.pp(lst).p; % path for files to be processed
 NC = NIRS.Cf.H.C.N; %number channels
 fs = NIRS.Cf.dev.fs; %sampling rate
+
+disp(['Computing AUX regression for ' NIRS.Dt.s.p(end-6:end-1)])
+
 if ~contains(job.covariables,'Constant','IgnoreCase',true)
     cov.labels=['Constant,' job.covariables];
     cov.labels =split(cov.labels,','); %get names of covariables to regress
 end
 
 if isfield(job,'nbtimeminimum')
-    nbtimeminimum=job.nbtimeminimum;
+    nbtimeminimum = job.nbtimeminimum;
 else
-    nbtimeminimum=10/40; %the % time non artifacted to be considered as a good channel
+    nbtimeminimum = 1/4; %the % time non artifacted to be considered as a good channel
 end
 
-nbchminimum =  0.37; %verification for each block: minimum % of good channels to keep the block
+if isfield(job,'nbchminimum')
+    nbchminimum=  job.nbchminimum;
+else
+    nbchminimum = 1/2; %verification for each block: minimum % of good channels to keep the block
 %min 20 channels out of 54
+end
 
 if isfield(job,'VIEWplot')
     VIEWplot=job.VIEWplot;
 else
-    VIEWplot=0;
+    VIEWplot=1;
 end
 
 %%%%%%%%%%%
@@ -67,7 +74,7 @@ end
 if ~exist('idAUX','var') %verify if a filtered AUX could be found
     error('No filtered AUX make sure to run filterAUX before this script')
 end
-goodAUX=NIRS.Dt.AUX(idAUX);
+goodAUX = NIRS.Dt.AUX(idAUX);
 
 if ~isfield(goodAUX.pp(end),'sync_timesec') %check if there were synchronisation -take the last field
     error('No segmentation have been made -- ensure that aux synchronisation are ok');
@@ -88,25 +95,24 @@ IDrows=[]; %Id of rows for the current script in the PARCOMP - will be use later
 for f = 1:size(rDtp,1) %for each block
     nirsdata = fopen_NIR(rDtp{f},NC)'; %load nir data for the block
     [cPATH,cFILE,~] = fileparts(rDtp{f});
-    tstart=1;
-    tstop=size(nirsdata,1);
+    tstart = 1;
+    tstop = size(nirsdata,1);
     badch = NIRS.Cf.H.C.ok(:,f);
     if badch==0 %if all channels are bad, switch to next block!
         continue
     end
     
-    %%check yellow + identify channels that have a ratio of bad/total
-    %%(time) that is worse than the limit (nbtimeminimum)
+    %%check yellow + identify channels that have a ratio of bad/total (time) that is worse than the limit (nbtimeminimum)
     mrks = [];
     ind = [];
     noise =  logical(zeros(size(nirsdata)));
-    badchY=ones([size(nirsdata,2) 1]);
+    badchY = ones([size(nirsdata,2) 1]);
     [ind_dur_ch] = read_vmrk_find(fullfile(cPATH,[cFILE '.vmrk']),{'bad_step'}); %load yellow
     if ~isempty(ind_dur_ch) %if yellow
         badind = find((ind_dur_ch(:,1)+ind_dur_ch(:,2))>size(noise,1)); %find if there is longer yellow than the data duration
         if ~isempty(badind)
             disp(['Warning file ' fullfile(cPATH,[cFILE '.vmrk']) ' marker : ' num2str(badind') ' are out of range in the data file'])
-            ind_dur_ch(badind,2)=size(noise,2)- ind_dur_ch(badind,1);
+            ind_dur_ch(badind,2) = size(noise,2)- ind_dur_ch(badind,1);
         end
         for Chan = 1:size(noise,2) %for each channel
             mrks = find(ind_dur_ch(:,3) == Chan); %extract its noise
@@ -117,7 +123,7 @@ for f = 1:size(rDtp,1) %for each block
                     noise(ind(i):indf(i),Chan) = 1; %mark each noise segment in the noise variable with 1
                 end
             end
-            if sum(ind_dur_ch([mrks],2))/size(noise,1) > nbtimeminimum %if the sum of the total noise > threshold - exclude channel
+            if sum(ind_dur_ch([mrks],2))/size(noise,1) > nbtimeminimum %if the sum of the total noise > threshold -> exclude channel
                 badchY(Chan)=0;
             end
         end
@@ -133,14 +139,14 @@ for f = 1:size(rDtp,1) %for each block
     % verification of minimum number of channels
     currentNchan=size(nirsdata(1,1:NC/2),2);
     if currentNchan < nbchminimum*NC/2
-        fprintf('Not enough valid channels (%d HbO channels) to continue with the spatial filtering.\nBlock %s is skipped.\n',...
+        fprintf('Not enough valid channels (%d HbO channels) to continue with the AUX regression.\nBlock %s is skipped.\n',...
             currentNchan,f);
         continue
     end
     
     % load auxiliaries (regressors)
     try
-        atstart=goodAUX.pp(end).sync_timesec{f};
+        atstart = goodAUX.pp(end).sync_timesec{f};
     catch
         atstart = 0;
         disp('Warning! Synchronization time not found. Automatically set to 0')
@@ -149,20 +155,20 @@ for f = 1:size(rDtp,1) %for each block
     [aPATH,aFILE,aEXT] = fileparts(goodAUX.pp(end).p{f}); %current path file and extension
     [adata,ainfoBV,~,~] = fopen_EEG(goodAUX.pp(end).p{f}, atstart, atstop); %load AUX
     
-    %get aux numbers that fits the covariable
-    for cc=1:length(cov.labels) %create constant variable
+    %get AUX numbers that fits the covariable
+    for cc = 1:length(cov.labels)
         if strcmpi('Constant',cov.labels{cc})
-            cov.data(:,cc)=ones([size(adata,1) 1]);
-            cov.ConstantID=cc;
+            cov.data(:,cc) = ones([size(adata,1) 1]); %create constant variable
+            cov.ConstantID = cc;
         else
-            for ich=1:numel(ainfoBV.name_ele) %find the AUX selected as covariables
+            for ich = 1:numel(ainfoBV.name_ele) %find the AUX selected as covariables
                 if strcmpi(ainfoBV.name_ele{ich},cov.labels{cc})
-                    cov.data(:,cc)=adata(:,ich); %create matrice data (X) of covariables that will be regressed
+                    cov.data(:,cc) = adata(:,ich); %create matrice data (X) of covariables that will be regressed
                 end
             end
         end
     end
-    if ~(size(cov.data,1)==size(nirsdata,1))
+    if ~(size(cov.data,1) == size(nirsdata,1))
         error('Time axis of NIRS data and AUX data (covariables) don''t have the same size')
     end
     %iduse = find(sum(~isnan(score),2)==size(score,2)& ~isnan(MATall(:,i,j)));
@@ -170,27 +176,28 @@ for f = 1:size(rDtp,1) %for each block
     %      y = MATall(iduse,i,j);
     %     if ~isempty(iduse)
     
-    %R2 statistic, the F-statistic and its p-value, and an estimate of the error variance.
-    goodCH=[];
+    %%
+    %%REGRESSION (R2 statistic, F-statistic, p-value, error variance estimate)
+    goodCH = [];
     for CH = 1:NC %for each channel
         if ~any(CH==idbad) %check if good
-            goodCH=[goodCH CH];
+            goodCH = [goodCH CH];
             [tmp.b,tmp.bint,~,~,tmp.stats] = regress(nirsdata(:,CH),cov.data); %regress NIRS data with all AUX
             tmpbeta(:,CH) = tmp.b;
             tmpbetainterval{CH} = tmp.bint;
-            %tmpresiduals{CH}=tmp.r;
-            tmpR2(CH)=tmp.stats(1);
-            tmpFstat(CH)=tmp.stats(2);
-            tmpSig(CH)=tmp.stats(3);
-            tmpErrorVariance(CH)=tmp.stats(4);
+            %tmpresiduals{CH} = tmp.r;
+            tmpR2(CH) = tmp.stats(1);
+            tmpFstat(CH) = tmp.stats(2);
+            tmpSig(CH) = tmp.stats(3);
+            tmpErrorVariance(CH) = tmp.stats(4);
         else
             tmpbeta(:,CH) = NaN([size(cov.data,2) 1]);
             tmpbetainterval{CH} = NaN;
-            %tmpresiduals{CH}= NaN;
-            tmpR2(CH)= NaN;
-            tmpFstat(CH)= NaN;
-            tmpSig(CH)= NaN;
-            tmpErrorVariance(CH)= NaN;
+            %tmpresiduals{CH} = NaN;
+            tmpR2(CH) = NaN;
+            tmpFstat(CH) = NaN;
+            tmpSig(CH) = NaN;
+            tmpErrorVariance(CH) = NaN;
         end
     end
     
@@ -199,7 +206,8 @@ for f = 1:size(rDtp,1) %for each block
         continue
     end
 
-    %Regression
+    %%
+    %%SOUSTRACTION of the regressed AUX
     tmpXcorr = nirsdata;
     for cc=1:length(cov.labels) %for each AUX
         tmpXm{cc} = tmpbeta(cc,:).* cov.data(:,cc); %multiply the beta of each AUX with the original AUX data
@@ -208,7 +216,8 @@ for f = 1:size(rDtp,1) %for each block
         end
     end
     
-    %write SELECTED FACTORS new info
+    %%
+    %%write SELECTED FACTORS new info
     PARCOMP(Prow).file= f;
     PARCOMP(Prow).filestr =  sprintf('Bl%02.0f', f);
     PARCOMP(Prow).label= ['ExtPhysio_' [cov.labels{~(1:length(cov.labels)==cov.ConstantID)}] '_' PARCOMP(Prow).filestr];
@@ -242,17 +251,17 @@ for f = 1:size(rDtp,1) %for each block
 end
 
 %% figure of beta distribution
-figg=figure('units','normalized','outerposition',[0 0 1 1]);
-figg=tiledlayout(2,length(cov.labels)-1,'TileSpacing','Compact','Padding','Compact');
-maintitle='Distribution of AUX beta values for physiology regression on HbO channels, sorted by channels and blocks';
-smalltitle='Median + interquartile range';
+figg = figure('units','normalized','outerposition',[0 0 1 1]);
+figg = tiledlayout(2,length(cov.labels)-1,'TileSpacing','Compact','Padding','Compact');
+maintitle = 'Distribution of AUX beta values for physiology regression on HbO channels, sorted by channels and blocks';
+smalltitle = 'Median + interquartile range';
 %get betas for hbo
-for f=1:length(IDrows)
-    for cc=1:length(cov.labels)
-        figbetas.(cov.labels{cc})(f,:)=PARCOMP(IDrows(f)).beta(cc,1:(NC/2));
+for f = 1:length(IDrows)
+    for cc = 1:length(cov.labels)
+        figbetas.(cov.labels{cc})(f,:) = PARCOMP(IDrows(f)).beta(cc,1:(NC/2));
     end
 end
-for cc=1:length(cov.labels)
+for cc = 1:length(cov.labels)
     if ~(cc==cov.ConstantID) %except the constant
         nexttile;
         boxchart(figbetas.(cov.labels{cc}),'markerstyle','.');
@@ -264,57 +273,61 @@ for cc=1:length(cov.labels)
     end
 end
 title(figg,maintitle,'fontweight','bold')
-subtitle(figg,smalltitle)
+%subtitle(figg,smalltitle) %only for matlabR2021a
 saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.fig'));
 saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.png'));
 close
 clear figg figbetas
 
-%% figure of corrected data
+%% figure of uncorrected/corrected data
 if VIEWplot
-    figg2=figure('units','normalized','outerposition',[0 0 1 1]);
-    figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
-    sizefig=ceil(length(IDrows)/5);
+    figg2 = figure('units','normalized','outerposition',[0 0 1 1]);
+    figg2 = tiledlayout(length(IDrows),3,'TileSpacing','Compact','Padding','Compact');
+    sizefig = ceil(length(IDrows)/5);
     yy=[];
-    for f=1:length(IDrows)
-        if any(f==6:5:70)
+    for f = 1:length(IDrows) %pour chaque bloc?
+        if any(f==6:5:70) %si plus de 6 blocs à afficher
             %adjust the Y limits so that all are the same!
-            for ir=1:15
-                nexttile(ir);
+            for ir = 1:15
+                nexttile(ir); %préparer une figure à 15 tiles, pourquoi? rien quiy est affiché?
                 xlim([0 size(PARCOMP(IDrows(1)).data,1)])
                 ylim([min(yy) max(yy)])
             end
             %save fig
             saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(f-5) '-' num2str(f-1) '.png']))
             close; clear figg2
-            figg2=figure('units','normalized','outerposition',[0 0 1 1]);
-            figg2=tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
+            figg2 = figure('units','normalized','outerposition',[0 0 1 1]);
+            figg2 = tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
             yy=[];
         end
 
         nexttile;
-        plot(PARCOMP(IDrows(f)).data(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); yy=[yy ylim];
+        plot(PARCOMP(IDrows(f)).data(:,1:(NC/2)) - mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); %pourquoi on enlève la moyenne des 38 premiers tp??
+        yy = [yy ylim];
         ylabel(['Block ' num2str(PARCOMP(IDrows(f)).file)],'fontweight','bold','FontSize',12);
-        if any(f==1:5:70); title('HBO initial data'); end
+        if any(f==1:5:70); title('HBO initial data'); end %dès qu'un bloc est mis en figure, mettre le titre
 
         nexttile;
-        plot(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)));  yy=[yy ylim];   hold on
+        plot(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)));
+        yy = [yy ylim];
+        hold on
         plot(mean(PARCOMP(IDrows(f)).Xm(:,1:(NC/2)),2,'omitnan'),'Color','k','LineWidth',2);
-        yy=[yy ylim];
+        yy = [yy ylim];
         if any(f==1:5:70); title('Physio component'); end
 
         nexttile;
-        plot(PARCOMP(IDrows(f)).dataCORR(:,1:(NC/2))-mean(PARCOMP(IDrows(f)).dataCORR(1:38,1:(NC/2)),'omitnan'));  yy=[yy ylim];
+        plot(PARCOMP(IDrows(f)).dataCORR(:,1:(NC/2)) - mean(PARCOMP(IDrows(f)).dataCORR(1:38,1:(NC/2)),'omitnan'));  yy=[yy ylim]; %pourquoi on enlève la moyenne des 38 premiers tp??
         if any(f==1:5:70); title('Corrected data'); end
     end
     %adjust the Y limits so that all are the same!
-    for ir=1:(3*(f-5*floor(f/5)))
+    for ir = 1:(3*(f-5*floor(f/5))) %nombre de conditions à afficher??
         nexttile(ir);
-        xlim([0 size(PARCOMP(IDrows(1)).data,1)])
+        xlim([0 size(PARCOMP(IDrows(1)).data,1)]) %mettre la même limite des axes x et y à toutes les tuiles
         ylim([min(yy) max(yy)])
     end
     %save fig
     saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(5*floor(f/5)+1) '-' num2str(f) '.png']))
+    saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(5*floor(f/5)+1) '-' num2str(f) '.fig']))
     close; clear figg2
 end
 
