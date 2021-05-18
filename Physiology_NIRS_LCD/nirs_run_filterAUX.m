@@ -39,33 +39,33 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         DelPreviousData  = NIRS.Dt.fir.pp(fstep).job.DelPreviousData;
     else
         DelPreviousData  = NIRS.Dt.fir.pp(fstep).job.DelPreviousData;
-        if contains(job.fparameters.lowcut,'same') || contains(job.fparameters.applylowcut,'same')
+        if contains(num2str(job.fparameters.lowcut,'same')) || contains(num2str(job.fparameters.applylowcut,'same'))
             [lowcut,applylowcut] = str2num(NIRS.Dt.fir.pp(fstep).job.lowcutfreq);
         else
             lowcut=job.fparameters.lowcut;
             applylowcut=job.fparameters.applylowcut;
         end
         
-        if contains(job.fparameters.highcut,'same') || contains(job.fparameters.applyhighcut,'same')
+        if containsnum2str(num2str(job.fparameters.highcut,'same')) || contains(num2str(job.fparameters.applyhighcut,'same'))
             [highcut ,applyhighcut] = str2num(NIRS.Dt.fir.pp(fstep).job.highcutfreq);
         else
             highcut=job.fparameters.highcut;
             applyhighcut=job.fparameters.applyhighcut;
         end
         
-        if  contains(job.fparameters.paddingsym,'same')
+        if  contains(num2str(job.fparameters.paddingsym,'same'))
             paddingsym = NIRS.Dt.fir.pp(fstep).job.paddingsymfilter; %symetrie padding on the signal to avoid edge on the filtering
         else
             paddingsym =job.fparameters.paddingsym;
         end
         
-        if  contains(job.fparameters.interpolate,'same')
+        if  contains(num2str(job.fparameters.interpolate,'same'))
             interpolate = NIRS.Dt.fir.pp(fstep).job.interpolatebadfilter;  %interpolate bad intervals
         else
             interpolate = job.fparameters.interpolate;
         end
         
-        if contains(job.fparameters.filt_ord,'same')
+        if contains(num2str(job.fparameters.filt_ord,'same'))
             filt_ord = NIRS.Dt.fir.pp(fstep).job.filterorder;
         else
             filt_ord = job.fparameters.filt_ord;
