@@ -110,7 +110,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
     end
     
     %% get AUX data + load for each block
-    for iAUX = 1:numel(NIRS.Dt.AUX) %For each AUX
+    for iAUX = 1:numel(NIRS.Dt.AUX) %For each AUX file
         if ~exist('filoverwrite','var')
             newAUX = numel(NIRS.Dt.AUX)+1;
         else
@@ -118,31 +118,40 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
         end
         if contains(NIRS.Dt.AUX(iAUX).label,'AUX') && ~contains(NIRS.Dt.AUX(iAUX).label,'fil') || contains(NIRS.Dt.AUX(iAUX).label,'EEG') && ~contains(NIRS.Dt.AUX(iAUX).label,'fil') %AUX name must contain the word AUX or EEG to be recognized
             fprintf('AUX found in NIRS.mat. Creating new AUX .dat file (downsampled, filtered, normalized)...\n')
-
+            
             if ~isfield(NIRS.Dt.AUX(iAUX).pp(end),'sync_timesec') %check if there were synchronisation -take the last field
                 error('No data segmentation has been made -- ensure that aux synchronisation is ok')
                 %disp('FilterAUX not completed') KR change
             else
-                                
+                
                 %%%%%%%%%%plot
                 figg = figure('units','normalized','outerposition',[0 0 1 1]);
-                %sizefig = ceil(length(NIRS.Dt.AUX(iAUX).pp(end).p)/4);
+                sizefig = ceil(length(NIRS.Dt.AUX(iAUX).pp(end).p)/4);
                 nfig = 1;
+                ynb = length(NIRS.Dt.AUX(iAUX).pp(end).p);
+                if ynb >1
+                    figg = tiledlayout(7,4,'TileSpacing','Compact','Padding','Compact');
+                else
+                    figg = tiledlayout(2,2,'TileSpacing','Compact','Padding','Compact');
+                end
                 %%%%%%%%%%plot
                 
                 for i=1:length(NIRS.Dt.AUX(iAUX).pp(end).p) %For each bloc
-                    
-%                     %%%%%%%%%%plot, 1 tile for each bloc
-%                     if i==(7*4+1) || i==(7*4*2+1)
-%                         saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.fig'])
-%                         saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.png'])
-%                         close
-%                         clear figg
-%                         figg = figure('units','normalized','outerposition',[0 0 1 1]);
-%                         sizefig = ceil(length(NIRS.Dt.AUX(iAUX).pp(end).p)/4);
-%                         figg = tiledlayout(7,4,'TileSpacing','Compact','Padding','Compact');
-%                         nfig = nfig + 1;
-%                     end
+                    %%%%%%%%%%plot, 1 tile for each bloc
+                    if ynb >1
+                        if i==(7*4+1) || i==(7*4*2+1) %si numéro de bloc dépasse le nb de blocs affichés dans la figure, enregistrer et changer de figure
+                            saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.fig'])
+                            saveas(figg,[cPATH filesep outAUXfolder filesep 'AUXfigure_' cFILE '_' num2str(nfig) '.png'])
+                            close
+                            clear figg
+                            figg = figure('units','normalized','outerposition',[0 0 1 1]);
+                            sizefig = ceil(length(NIRS.Dt.AUX(iAUX).pp(end).p)/4);
+                            figg = tiledlayout(7,4,'TileSpacing','Compact','Padding','Compact');
+                            nfig = nfig + 1;
+                        end
+                        %%%%%%%%%%plot
+                        nexttile; 
+                    end
                     %%%%%%%%%%plot
                     
                     nameAUX = NIRS.Dt.AUX(iAUX).pp(end).p{i};
@@ -168,16 +177,6 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     [~,q] = rat(fs/fsAUX,0.0001); %Ratio des fréquences d'échantillonnage
                     AUXupdate.ind_dur_ch = auxind_dur_ch((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:); %select only the events during the NIRS recording
                     AUXupdate.marker = marker((auxind_dur_ch(:,1)>tstart*fsAUX) & (auxind_dur_ch(:,1)<tstop*fsAUX),:);
-                    
-                    %%%%%%%%%%plot%%%%%%
-                    xnb = numel(infoBV.name_ele);
-                    ynb = length(NIRS.Dt.AUX(iAUX).pp(end).p);
-                    if ynb == 1
-                        ynb = ynb*2;
-                        xnb = xnb/2;
-                    end
-                    figg = tiledlayout(xnb,ynb,'TileSpacing','Compact','Padding','Compact');
-                    %%%%%%%%%%plot%%%%%%
                     
                     %% DETERMINE BAD INTERVAL FOR INTERPOLATION
                     %%BASED ON NIRS DATA. taken from the extractcomponent
@@ -236,19 +235,25 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                     end
                     
                     %% DOWNSAMPLE TO THE SAME FS AS NIRS
-                    for ich=1:numel(infoBV.name_ele) %Pour chaque canal dans les AUX
-                        nexttile;
+                    for ich = 1:numel(infoBV.name_ele) %for each AUX channel
+
                         tmp = data(:,ich);
-                        rstmp=downsample(tmp,q);
+                        rstmp = downsample(tmp,q);
                         
                         %% NORMALIZE AUX data (z score)
-                        rstmp=(rstmp-mean(rstmp))/std(rstmp);
+                        rstmp = (rstmp-mean(rstmp))/std(rstmp);
                         
-                        %%%%%%%%%%plot                    
-                        plot(rstmp,'color',AUXcolor{ich},'linewidth',.6);
-                        titleAUX = infoBV.name_ele{ich};
-                        title(titleAUX)
-                        hold on;
+                        %%%%%%%%%%plot
+                        if ynb >1
+                            plot(rstmp,'color',AUXcolor{ich},'linewidth',.6);
+                            hold on;
+                        else
+                            nexttile; %plot 1 tile for each AUX
+                            plot(rstmp,'color',AUXcolor{ich},'linewidth',.6);
+                            hold on;
+                            titleAUX = infoBV.name_ele{ich};
+                            title(titleAUX)
+                        end
                         %%%%%%%%%%plot
                         
                         %% INTERPOLATION OF BAD INTERVALS
@@ -280,9 +285,9 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                            end
                         end
                         
-                        %%%%%%%%%%plot                    
-                        plot(rstmp,'color',AUXcolor{ich}+.1,'linewidth',.6);
-                        hold on;
+                        %%%%%%%%%%plot
+                            plot(rstmp,'color',AUXcolor{ich}+.1,'linewidth',.6);
+                            hold on;
                         %%%%%%%%%%plot
                         
                         %% PADDING
@@ -308,19 +313,19 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         %[fb,fa]=butter(filt_ord,[W1, W2]);
                         %dfilt = filtfilt(fb,fa,d);
                         
-                        if applylowcut==true %&& applyhighcut==false %only low pass
+                        if applylowcut == true %&& applyhighcut==false %only low pass
                             Wn = lowcut*2/fs;
-                            [fb,fa]=butter(filt_ord,Wn);
+                            [fb,fa] = butter(filt_ord,Wn);
                             dfilt1 = filtfilt(fb,fa,d);
                         else
-                            dfilt1=d;
+                            dfilt1 = d;
                         end
-                        if applyhighcut==true % && applylowcut==false %only high pass
+                        if applyhighcut == true % && applylowcut==false %only high pass
                             Wn = highcut*2/fs;
-                            [fb,fa]=butter(filt_ord,Wn,'high');
+                            [fb,fa] = butter(filt_ord,Wn,'high');
                             dfilt = filtfilt(fb,fa,dfilt1);
                         else
-                            dfilt=dfilt1;
+                            dfilt = dfilt1;
                         end
                         
                         if paddingsym
@@ -363,7 +368,7 @@ for filenb=1:size(job.NIRSmat,1) %Loop over all subjects
                         text(.95,.9,['block #' num2str(i)],'HorizontalAlignment','right','units','normalized')
                     end
                     
-                    yytemp = ylim;
+                    yytemp = ylim; %set y limits to max 5 and min -5
                     if yytemp(1)<-5 && yytemp(2)>5
                         ylim([-5 5]);
                     elseif yytemp(1)<-5
