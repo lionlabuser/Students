@@ -1,3 +1,4 @@
+clear
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%% parameter to adjust %%%%%%%%%%%%%%%%%%
 fileXLS = 'C:\data\Malnutrition\Resting\NIRS\DocumentInfo\ReadDataRestMal.xlsx';
@@ -98,7 +99,7 @@ for isubject=2:size(raw,1)
              %%create new branch
             jobA.m_newbranchcomponent = 1; %1 if copy paste SelectedFactors.mat and CorrectionApply.mat
             jobA2 = nirs_run_NIRSmatcreatenewbranch(jobA); %run script (create new folder + copy NIRS, SelectedFactors)
-            dir1 = fileparts(jobA.NIRSmat{1});
+            dir1 = fileparts(jobA.NIRSmat{1}); %move saved graphs in the newbranch folder
             dir2 = fileparts(jobA2.NIRSmat{1});
             flist = dir(fullfile(dir1));
             tf = contains({flist.name},'Physio');
@@ -108,9 +109,9 @@ for isubject=2:size(raw,1)
             end
             
             %overwrite nirs data with the corrected data
-            jobA2.globalmethod = jobA.e_NIRSmatdirnewbranch; %label that will be search into the SelectedFactors.mat PARCOMP variable
+            jobA2.globalmethod = jobA.e_NIRSmatdirnewbranch; %label that will be searched into the SelectedFactors.mat PARCOMP variable
             jobA2.DelPreviousData = 0;
-            nirs_writeNIR_aftercorr(jobA2);%run script
+            nirs_writeNIR_aftercorr(jobA2);%run script, write hdr & mrk
             
             %%suppress SelectedFactors.mat file in the new directory
             delete([dir2 filesep 'SelectedFactors.mat'])
