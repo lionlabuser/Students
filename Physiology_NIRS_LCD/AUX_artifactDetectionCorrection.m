@@ -41,19 +41,22 @@ for c=1:2
     newdata(:,c)=zscore(newdata(:,dataid(c))); %normalized
 end
 
-threshold=[.3 .7;... %moving STD threshold, respectively for SAT and RESP, in standardized units    .34 .67
-    .4   .8];%...  %moving AVG threshold, respectively for SAT and RESP, in standardized units    .4   1.0
-%    .2 .2 ]; %moving STD DIFFERENCE threshold, respectively for SAT and RESP, in standardized units    .34 .67
-adjwindow=[1 3] ; %moving window length before and after X in seconds ( *2: if you want a 3 sec window = please write 1.5)
-minlength=3; %minimum length of intervals (good or bad) in data points
+timeaxe=linspace(0,size(newdata,1)/fs,size(newdata,1));
+
+threshold=[.25 .9;... %moving STD threshold, respectively for SAT and RESP, in standardized units(zscore) 
+    .5   .9];%...  %moving AVG threshold, respectively for SAT and RESP, in standardized units (zscore)  
+%    .2 .2 ]; %moving STD DIFFERENCE threshold, respectively for SAT and RESP, in standardized units(zscore)    
+adjwindow=[1 3.5] ; %moving window length before and after X in seconds ( *2: if you want a 3 sec window = please write 1.5)
+minlength=4; %minimum length of intervals (good or bad) in data points
 pausetime=5;
 question1=[0 0];
 while any(question1==0)
     clear xma
     xma{1}=1;xma{2}=1;
     for x=1:size(newdata,1)
-        
-        tmpwindow=[x-ceil(fs*3.5) x+ceil(fs*3.5)];
+        for c=1:2
+            
+        tmpwindow=[x-ceil(fs*adjwindow(c)) x+ceil(fs*adjwindow(c))];
         if tmpwindow(1) < 1
             tmpd=1-tmpwindow(1);
             tmpwindow=tmpwindow+tmpd;
@@ -62,7 +65,6 @@ while any(question1==0)
             tmpwindow=tmpwindow+tmpd;
         end
         
-        for c=1:2
             mstd(x,c)=std(newdata(tmpwindow(1):tmpwindow(2),c))  ;
             mavg(x,c)=mean(newdata(tmpwindow(1):tmpwindow(2),c))  ;
             % if x==1; mdstd(x,c)=0;
@@ -104,7 +106,7 @@ while any(question1==0)
             %plot(mdstd(:,c)); ylim([0 1.2]); yline(threshold(3,c)); ylabel('Moving STD changes')
             nexttile;
             area(1:length(newdata(:,c)),MA(:,c)*10,0,'LineStyle','none','FaceColor',[.7 .7 .7]);hold on %box
-            plot(mavg(:,c)); ylim([-1.5 1.5]); yline(threshold(2,c)); ylabel('Moving AVG');xlabel('Time (in data pts at 7.8Hz)')
+            plot(mavg(:,c)); ylim([-1.5 1.5]); yline(threshold(2,c)); yline(-threshold(2,c)); ylabel('Moving AVG');xlabel('Time (in data pts at 7.8Hz)')
             
             title(figaux,['Artifact Detection for : ' chanlabels{c}])
             minn=0:2000:length(newdata(:,c))-2000;
@@ -153,11 +155,14 @@ for c=1:2 %segmentation
         end
     end
 end
-pausetime=3;
-int=[6 1]; %xaxis multiplier
-pp=[.02 .01]; %cubic smoothing spline (pp=smoothing parameter);
+pausetime=3; %time for wiewing before the automatic change of the time window
+int=[2 1]; %xaxis multiplier (because SAT has really high frequency artifacts, 
+% I tried and the algorithm was better to correct the SAT artifacts when we
+% multiply the Xaxis
+pp=[.99 .99]; %cubic smoothing spline (pp=smoothing parameter);
 %close to 0= least-square straight line fit ;
 %close to 1= natural cubic spline interpolant;
+
 question2=[0 0];
 while any(question2==0)
     close
@@ -166,7 +171,7 @@ while any(question2==0)
         for m=1:length(xma{c})
             if MA(xma{c}(m),c)
                 idsegment{m,c}='bad';
-                tmpsegment=csaps((1:length(dsegment{m,c}))*int(c),dsegment{m,c}',pp(c),(1:length(dsegment{m,c}))*int(c));
+                 tmpsegment=csaps(timeaxe(1:length(dsegment{m,c}))*int(c),dsegment{m,c}',pp(c),timeaxe(1:length(dsegment{m,c}))*int(c));
                 %same function used by Scholkmann et al 2010 doi:
                 % for more info: https://www.mathworks.com/help/curvefit/csaps.html
                 newsegment{m,c}=dsegment{m,c}-(tmpsegment');
@@ -185,6 +190,7 @@ while any(question2==0)
         nexttile;
         corrdata(:,c)=vertcat(newsegment{1:length(xma{c}),c}); %#ok<*SAGROW>
         plot(newdata(:,c));hold on; plot(corrdata(:,c));
+        legend({'Non-corrected signal' 'Corrected signal'})
         ylabel(chanlabels{c})
     end
     title(figcorr,'Before and after data correction by spline interpolation')
@@ -199,7 +205,7 @@ while any(question2==0)
     
     for c=1:2
         
-        question2(c)=input(['Are you satisfied with the identification of bad intervals for ' chanlabels{c} ' aux? [1=yes,0=no] Enter here: ']);
+        question2(c)=input(['Are you satisfied with the correction of bad intervals for ' chanlabels{c} ' aux? [1=yes,0=no] Enter here: ']);
         if ~question2(c)
             int(c)=input(['New x-axis multiplier (previous = ' num2str(int(c)) '). Enter here: ']);
             pp(c)=input(['New smoothing parameter? (previous = ' num2str(pp(c)) '). Enter here: ']);
