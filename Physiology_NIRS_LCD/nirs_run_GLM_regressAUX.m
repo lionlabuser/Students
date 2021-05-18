@@ -63,10 +63,10 @@ if ~isfield(NIRS.Dt,'AUX') %verify if theres an AUX
 end
 
 for iAUX = 1:numel(NIRS.Dt.AUX) %Find the filtered AUX
-    newAUX=numel(NIRS.Dt.AUX)+1;
+    newAUX = numel(NIRS.Dt.AUX)+1;
     if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG')
         if contains(NIRS.Dt.AUX(iAUX).label,'fil')
-            idAUX=iAUX;
+            idAUX = iAUX;
             break
         end
     end
@@ -74,6 +74,14 @@ end
 if ~exist('idAUX','var') %verify if a filtered AUX could be found
     error('No filtered AUX make sure to run filterAUX before this script')
 end
+
+for ilabel = 1:numel(NIRS.Dt.AUX)
+    AUXlabels{ilabel} = NIRS.Dt.AUX(ilabel).label;
+end
+if sum(contains(AUXlabels,'fil'))>1
+    error('More than one filtered AUX')
+end
+
 goodAUX = NIRS.Dt.AUX(idAUX);
 
 if ~isfield(goodAUX.pp(end),'sync_timesec') %check if there were synchronisation -take the last field
@@ -84,11 +92,12 @@ end
 [nirsPATH,~,~] = fileparts(job.NIRSmat{1});
 if exist(fullfile(nirsPATH,'SelectedFactors.mat'),'file')
     load(fullfile(nirsPATH,'SelectedFactors.mat'))
-    Prow=length(PARCOMP)+1;
+    Prow = length(PARCOMP) + 1; %number of components computed for each participants (1 per block)
 else
-    PARCOMP=struct;
-    Prow=1;
+    PARCOMP = struct;
+    Prow = 1;
 end
+
 IDrows=[]; %Id of rows for the current script in the PARCOMP - will be use later to create a graph output regarding the betas
 
 %% 
@@ -112,7 +121,7 @@ for f = 1:size(rDtp,1) %for each block
         badind = find((ind_dur_ch(:,1)+ind_dur_ch(:,2))>size(noise,1)); %find if there is longer yellow than the data duration
         if ~isempty(badind)
             disp(['Warning file ' fullfile(cPATH,[cFILE '.vmrk']) ' marker : ' num2str(badind') ' are out of range in the data file'])
-            ind_dur_ch(badind,2) = size(noise,2)- ind_dur_ch(badind,1);
+            ind_dur_ch(badind,2) = size(noise,2) - ind_dur_ch(badind,1);
         end
         for Chan = 1:size(noise,2) %for each channel
             mrks = find(ind_dur_ch(:,3) == Chan); %extract its noise
@@ -125,6 +134,8 @@ for f = 1:size(rDtp,1) %for each block
             end
             if sum(ind_dur_ch([mrks],2))/size(noise,1) > nbtimeminimum %if the sum of the total noise > threshold -> exclude channel
                 badchY(Chan)=0;
+                percent = sum(ind_dur_ch([mrks],2))/size(noise,1)*100;
+                disp(['Channel ' num2str(Chan) 'excluded for being ' percent '% noisy'])
             end
         end
     end
@@ -132,12 +143,12 @@ for f = 1:size(rDtp,1) %for each block
     % for NIRS bad channels, replace the data with NaN values
     idbad = find(badch==0|badchY==0); %remove exclude channel from regressor
     if ~isempty(idbad)
-        nirsdata(:,idbad) = nan;
-        disp(['Channels ' num2str(idbad') ' are excluded from the regression'])
+        nirsdata(:,idbad) = nan; %set bad channels as NaN values
+        disp(['Channels ' num2str(idbad') ' are excluded from the regression and are set as NaN'])
     end
     
     % verification of minimum number of channels
-    currentNchan=size(nirsdata(1,1:NC/2),2);
+    currentNchan = size(nirsdata(1,1:NC/2),2);
     if currentNchan < nbchminimum*NC/2
         fprintf('Not enough valid channels (%d HbO channels) to continue with the AUX regression.\nBlock %s is skipped.\n',...
             currentNchan,f);
@@ -151,8 +162,8 @@ for f = 1:size(rDtp,1) %for each block
         atstart = 0;
         disp('Warning! Synchronization time not found. Automatically set to 0')
     end
-    atstop = atstart+NIRS.Dt.fir.sizebloc{f}*1/fs;
-    [aPATH,aFILE,aEXT] = fileparts(goodAUX.pp(end).p{f}); %current path file and extension
+    atstop = atstart + NIRS.Dt.fir.sizebloc{f}*1/fs;
+    %[aPATH,aFILE,aEXT] = fileparts(goodAUX.pp(end).p{f}); %current path file and extension
     [adata,ainfoBV,~,~] = fopen_EEG(goodAUX.pp(end).p{f}, atstart, atstop); %load AUX
     
     %get AUX numbers that fits the covariable
@@ -243,7 +254,7 @@ for f = 1:size(rDtp,1) %for each block
     PARCOMP(Prow).idreg = 1;
     PARCOMP(Prow).topo = tmpbeta(PARCOMP(Prow).ComponentToKeep,:);
     
-    IDrows=[IDrows Prow];
+    IDrows=[IDrows Prow]; %nb of blocks
     Prow = Prow + 1;
     clear tmp* cov.data goodCH nirsdata idbad
     
@@ -251,58 +262,61 @@ for f = 1:size(rDtp,1) %for each block
 end
 
 %% figure of beta distribution
-figg = figure('units','normalized','outerposition',[0 0 1 1]);
-figg = tiledlayout(2,length(cov.labels)-1,'TileSpacing','Compact','Padding','Compact');
-maintitle = 'Distribution of AUX beta values for physiology regression on HbO channels, sorted by channels and blocks';
-smalltitle = 'Median + interquartile range';
-%get betas for hbo
-for f = 1:length(IDrows)
-    for cc = 1:length(cov.labels)
-        figbetas.(cov.labels{cc})(f,:) = PARCOMP(IDrows(f)).beta(cc,1:(NC/2));
-    end
-end
-for cc = 1:length(cov.labels)
-    if ~(cc==cov.ConstantID) %except the constant
-        nexttile;
-        boxchart(figbetas.(cov.labels{cc}),'markerstyle','.');
-        ylabel('Beta values'); xlabel('Channels'); title(cov.labels{cc});yline(0,'--');
-        nexttile;
-        boxchart(figbetas.(cov.labels{cc})','markerstyle','.');
-        ylabel('Beta values'); xlabel('Blocks'); title(cov.labels{cc});yline(0,'--');
-        xticklabels([PARCOMP(IDrows).file]);
-    end
-end
-title(figg,maintitle,'fontweight','bold')
-%subtitle(figg,smalltitle) %only for matlabR2021a
-saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.fig'));
-saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.png'));
-close
-clear figg figbetas
-
-%% figure of uncorrected/corrected data
 if VIEWplot
+    figg = figure('units','normalized','outerposition',[0 0 1 1]);
+    figg = tiledlayout(1,length(cov.labels)-1,'TileSpacing','Compact','Padding','Compact');
+    maintitle = 'Distribution of AUX beta values for physiology regression on HbO channels, sorted by channels and blocks';
+    smalltitle = 'Median + interquartile range';
+    %get betas for hbo
+    for f = 1:length(IDrows) %for each block
+        for cc = 1:length(cov.labels) %for each cov (AUX+constant)
+            figbetas.(cov.labels{cc})(f,:) = PARCOMP(IDrows(f)).beta(cc,1:(NC/2)); %extract betas for HbO
+        end
+    end
+    for cc = 1:length(cov.labels) %for each cov (AUX+constant)
+        if ~(cc==cov.ConstantID) %except the constant
+            %nexttile;
+            %boxchart(figbetas.(cov.labels{cc}),'markerstyle','.');
+            %ylabel('Beta values'); xlabel('Channels'); title(cov.labels{cc});yline(0,'--');
+            nexttile;
+            boxchart(figbetas.(cov.labels{cc})','markerstyle','.');
+            ylabel('Beta values'); xlabel('Blocks'); title(cov.labels{cc});yline(0,'--');
+            xticklabels([PARCOMP(IDrows).file]);
+        end
+    end
+    title(figg,maintitle,'fontweight','bold')
+    %subtitle(figg,smalltitle) %only for matlabR2021a
+    saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.fig'));
+    saveas(figg,fullfile(nirsPATH,'BetaPhysio_distributionplot.png'));
+    close
+    clear figg figbetas
+
+    %% figure of uncorrected/corrected data
     figg2 = figure('units','normalized','outerposition',[0 0 1 1]);
-    figg2 = tiledlayout(length(IDrows),3,'TileSpacing','Compact','Padding','Compact');
-    sizefig = ceil(length(IDrows)/5);
+    if length(IDrows)>1 %if more than 1 block
+        figg2 = tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
+        sizefig = ceil(length(IDrows)/5);
+    else
+        figg2=tiledlayout(1,3,'TileSpacing','Compact','Padding','Compact');
+    end
     yy=[];
-    for f = 1:length(IDrows) %pour chaque bloc?
-        if any(f==6:5:70) %si plus de 6 blocs à afficher
+    for f = 1:length(IDrows) %for each bloc
+        if any(f==6:5:70) %lorsque la figure dépasse 5 graph
             %adjust the Y limits so that all are the same!
-            for ir = 1:15
-                nexttile(ir); %préparer une figure à 15 tiles, pourquoi? rien quiy est affiché?
+            for ir = 1:15 %adjust ylim and x lim of each tile
+                nexttile(ir);
                 xlim([0 size(PARCOMP(IDrows(1)).data,1)])
                 ylim([min(yy) max(yy)])
             end
-            %save fig
-            saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(f-5) '-' num2str(f-1) '.png']))
+            saveas(figg2,fullfile(nirsPATH,['PhysioCorr_b' num2str(f-5) '-' num2str(f-1) '.png'])) %save fig
             close; clear figg2
-            figg2 = figure('units','normalized','outerposition',[0 0 1 1]);
+            figg2 = figure('units','normalized','outerposition',[0 0 1 1]); %create new figure
             figg2 = tiledlayout(5,3,'TileSpacing','Compact','Padding','Compact');
             yy=[];
         end
 
         nexttile;
-        plot(PARCOMP(IDrows(f)).data(:,1:(NC/2)) - mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); %pourquoi on enlève la moyenne des 38 premiers tp??
+        plot(PARCOMP(IDrows(f)).data(:,1:(NC/2)))% - mean(PARCOMP(IDrows(f)).data(1:38,1:(NC/2)),'omitnan')); %retrait du baseline de LCD
         yy = [yy ylim];
         ylabel(['Block ' num2str(PARCOMP(IDrows(f)).file)],'fontweight','bold','FontSize',12);
         if any(f==1:5:70); title('HBO initial data'); end %dès qu'un bloc est mis en figure, mettre le titre
