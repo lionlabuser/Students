@@ -2,11 +2,11 @@
 tic
 disp('Computing ANCOVA')
 
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\Physio\';
+datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\';
 load ([datapath 'workspace.mat'])
 load ([datapath 'workspacemat.mat'])
 
-savepathinitial='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\Physio\ANCOVA\';
+savepathinitial='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\ANCOVA\';
 if ~isfolder(savepathinitial)
     mkdir(savepathinitial)
 end
@@ -1006,8 +1006,12 @@ clear X
 end
 
 clearvars -except datapath savepathinitial channelmode importedROImode calculatedROImode tablegraphmode fileorderconnectogram fdrmode nointeractionmode interactionmode p
-%load ([datapath 'workspace.mat'])
-%load ([datapath 'workspacemat.mat'])
+load ([datapath 'workspace.mat'])
+load ([datapath 'workspacemat.mat'])
+%savepathinitial='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\ANCOVA\';
+if ~isfolder(savepathinitial)
+    mkdir(savepathinitial)
+end
 
 %%
 %ANCOVA AVEC INTERACTION%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

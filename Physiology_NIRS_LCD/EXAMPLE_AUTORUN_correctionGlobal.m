@@ -27,8 +27,8 @@ VIEWplot = 0; %if you dont want, put 0
 % ------------ parameters to adjust for AUXPHYSIOLOGY
 jobA.outAUXfolder = 'filAUX'; %for nirs_run_filterAUX
 jobA.copynirs = 1; %for nirs_run_filterAUX
-jobA.covariables = 'Sat,Resp,EOG,EKG'; %for nirs_run_GLM_regressAUX
-jobA.e_NIRSmatdirnewbranch = 'SatRespEOGEKG'; %name of the new branch to create
+jobA.covariables = 'Sat,Resp,EKG'; %for nirs_run_GLM_regressAUX
+jobA.e_NIRSmatdirnewbranch = 'SatRespEKG'; %name of the new branch to create
 
 %------------- parameters for GLOBALPHYSIOLOGY
 jobG.trig = [0]; %for nirs_run_GlobalPhysio % 0 for resting OR trig number for task
@@ -43,7 +43,7 @@ jobW.goodPercent = 0.5;
 jobW.e_NIRSmatdirnewbranch = 'SpatialPCA';%name of the new branch to create
 
 %------------- parameters for VIEWplotGLOBALphys
-PhysioLabels4FIGURES = {'SatRespEOGEKG' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
+PhysioLabels4FIGURES = {'SatRespEKG' 'SpatialPCA'}; %need to be in the SelectedFactors.mat
 
 %%%%%%%%%%%%%%%%%%%%%%%%%  end  %%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

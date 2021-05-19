@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%PREPARING CORR DATA FOR ANALYSIS%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\';
+savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\';
 if ~isfolder(savepath)
     mkdir(savepath)
 end
@@ -11,7 +11,7 @@ channelmode = 1; %Faire les analyses sur les canaux
 ROImode = 1; %Faire les analyses sur les ROI
 
 connectivity = 'CORR'; %Modify 'COH' OR 'CORR'
-xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
+xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\PhysioRegressed_SatRespEKG\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
 exceltable = 'C:\data\Malnutrition\Resting\NIRS\Participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
 
 %%%%%% from StatMatrices of LIONIRS toolbox%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,7 +62,61 @@ idsubject = 1:numel(groupeall); %channel mode
 %sélectionner le nom du fichier zone et la liste des canaux du dernier participant%     
 ZONEid = [info{end,3}];
 ZoneList =  DATA{end}.ZoneList;
-%labelnode = 'c';
+labelnode = 'c';
+
+
+% %%%%%%%% NEWLY ADDED, Calculate ROI from StatMatrix%%%%%%%%%%%%%%%%
+% %création d'une matrice pour les zones de tous les sujets
+% MATall = zeros(numel(DATA),numel(DATA{id}.zone.label),numel(DATA{id}.zone.label));
+% for isubject = 1:numel(groupeall) %Pour chaque sujet
+%     List = DATA{isubject}.ZoneList; %Extraire la ZoneList
+%     
+%     for izone = 1:numel(DATA{isubject}.zone.label) %Pour chaque zone
+%         ML = DATA{isubject}.zone.ml; %Extraire le ML (paire d'optodes)
+%         DATA{isubject}.zone.plotLst; %Extraire le plotLst (id canal)
+%         idlisti = [];
+%         idliststr = [];
+%         chzone = DATA{isubject}.zone.plotLst{izone}; %Extraire les canaux de la zone
+%         
+%         for ichzone = 1:numel(chzone); %pour chaque canal dans la zone
+%             ich = chzone(ichzone); %Identifier le canal
+%             if strcmp(DATA{isubject}.System,'ISS')
+%                 strDet = SDDet2strboxy_ISS(ML(ich,2)); %extraire le nom du détecteur
+%                 strSrs = SDPairs2strboxy_ISS(ML(ich,1)); %extraire le nom de la source
+%                 idch = strmatch([strDet, ' ',strSrs ],List,'exact'); %trouver la paire d,optodes dans la liste
+%             end
+%             idliststr =[idliststr,{[strDet, ' ',strSrs ]}]; %liste des paires d'optodes de la zone
+%             idlisti = [idlisti, idch]; %liste des canaux de la zone
+%         end
+%         
+%         for jzone = 1:numel(DATA{isubject}.zone.label) %pour chaque zone, refaire la même chose
+%             idlistj = [];
+%             chzone = DATA{isubject}.zone.plotLst{jzone};
+%             
+%             for ichzone = 1:numel(chzone); %pour chaque canal dans la zone
+%                 ich = chzone(ichzone);
+%                 if strcmp(DATA{isubject}.System,'ISS')
+%                     strDet = SDDet2strboxy_ISS(ML(ich,2));
+%                     strSrs = SDPairs2strboxy_ISS(ML(ich,1));
+%                     idch = strmatch([strDet, ' ',strSrs ],List,'exact');
+%                 end
+%                 idlistj = [idlistj, idch]; %liste des canaux de la zone
+%             end
+%             matROI = DATA{isubject}.MAT(idlisti,idlistj); %extraire la connectivité entre les canaux des paires de zones sélectionnés(matrice de ROI)
+%             id = find(matROI==0); %trouver si des paires de canaux ont une connectivité de 0
+%             if isempty(id) %s'il n'y a rien dans la matrice, la mettre NAN
+%                 matROI(id)=nan;
+%             end
+%             MATall(isubject,izone,jzone) = nanmean(matROI(:)); %faire la moyenne de la connectivité des canaux entre la paire de ROI
+%             if izone==jzone
+%                 matnbnanbyizone(isubject,izone)=numel(find(sum(double(isnan(matROI))) ==size(matROI,1)));
+%                 matnbtotchbyizone(isubject,izone) = size(matROI,1);
+%             end
+%         end
+%     end
+%     groupid(isubject)= DATA{isubject}.GR;
+%     labelnode = 'z';
+% end
 
 save([savepath date '_MATall.mat'],'MATall');
 %save([savepath date '_DATA.mat'],'MATall');

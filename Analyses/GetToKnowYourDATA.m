@@ -2,21 +2,16 @@
 tic
 disp('Computing GetToKnowYourDATA')
 
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\';
+datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\';
 load ([datapath 'workspace.mat'])
 load ([datapath 'workspacemat.mat'])
-
-savepathinitial='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\';
-if ~isfolder(savepathinitial)
-    mkdir(savepathinitial)
-end
 
 fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Mixte.txt',...
                          'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Region.txt',...
                          'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Fonction.txt',...
                          'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Aire.txt'};
 
-descrstatsmode = 0;
+descrstatsmode = 1;
 graphmode = 1;
 channelmode = 1;
 importROI = 0;
@@ -29,15 +24,19 @@ disp('Computing Descriptive Statistics')
 if descrstatsmode
     %Channels%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if importROI == 0 & channelmode == 1
+        %données de FC séparée par groupe
+        datachG1 = datach(idG1,:);
+        datachG2 = datach(idG2,:);
+        
         %normalité et valeurs extrêmes%
-        meanG1ch = nanmean(datach(idG1,:));
-        meanG2ch = nanmean(datach(idG2,:));
-        stdG1ch = nanstd(datach(idG1,:));
-        stdG2ch = nanstd(datach(idG2,:));
-        sknG1ch = skewness(datach(idG1,:));
-        sknG2ch = skewness(datach(idG2,:));
-        krtG1ch = kurtosis(datach(idG1,:));
-        krtG2ch = kurtosis(datach(idG2,:));
+        meanG1ch = nanmean(datachG1);
+        meanG2ch = nanmean(datachG1);
+        stdG1ch = nanstd(datachG1);
+        stdG2ch = nanstd(datachG1);
+        sknG1ch = skewness(datachG1);
+        sknG2ch = skewness(datachG1);
+        krtG1ch = kurtosis(datachG1);
+        krtG2ch = kurtosis(datachG1);
 
         tblgrmeanch = [array2table([meanG1ch],'VariableNames',labelch); array2table([meanG2ch],'VariableNames',labelch)];
         tblgrmeanch.Properties.RowNames = {'G1','G2'};
@@ -688,8 +687,8 @@ if graphmode
             ylabel('Proportion of the participants (%)');
             str = sprintf('%s Histogram of the participants FC values',ROIname);
             title(str);
-            %savefig([savepath date '_HistROIPart']);
-            %exportgraphics(gcf,[savepath 'HistROIPart.png'])
+            savefig([savepath date '_HistROIPart']);
+            exportgraphics(gcf,[savepath 'HistROIPart.png'])
             
             clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
             
@@ -779,6 +778,8 @@ if graphmode
         elseif channelmode
             title('Channels Mean G1-G2')
         end
+        savefig([savepath date '_MatG1G2']);
+        exportgraphics(gcf,[savepath 'MatG1G2.png'])
         
         clear c cmin cmax clims ax
         
@@ -808,7 +809,9 @@ if graphmode
         elseif channelmode
             title('Channels Mean G1-G2 > 2SD')
         end
-
+        savefig([savepath date '_MatSDG1G2']);
+        exportgraphics(gcf,[savepath 'MatSDG1G2.png'])
+        
         clear meandiff stddiff tr tf c cmin cmax clims ax 
 
         datachG1G2 = MATvTBL.MAT2TBL(MATG1G2); %transformer la matrice en tableau
@@ -842,7 +845,9 @@ if graphmode
         elseif channelmode
             title('Channels Largest FC difference between G1 and G2')
         end
-
+        savefig([savepath date '_TblSDG1G2']);
+        exportgraphics(gcf,[savepath 'TblSDG1G2.png'])
+        
         if find(MATG1G2)
             id = 1;
             List = strvcat(DATA{id}.ZoneList); %liste des paires SD
@@ -852,8 +857,8 @@ if graphmode
             plotconnectogram(fileorderconnectogram{1,1},MATG1G2,List,label,plotLst,ML)
             str = sprintf('%s Largest FC difference between G1 and G2');
             title(str)
-            %savefig([savepath date '_ConnectG1G2']);
-            %exportgraphics(gcf,[savepath 'SigCh.png'])
+            savefig([savepath date '_ConnectSDG1G2']);
+            exportgraphics(gcf,[savepath 'ConnectSDG1G2.png'])
         else
         end
         
@@ -863,7 +868,6 @@ if graphmode
     
     
     if calculateROI
-        R = 1;
         for R = 1:numel(roi)
             ROIname = sprintf('%s',lgndroi{1,R});
             
@@ -889,6 +893,7 @@ if graphmode
             ax.FontSize = 12;
             str = sprintf('%s Mean G1-G2',ROIname);
             title(str)
+            
             
             clear c cmin cmax clims ax str
             
@@ -947,6 +952,8 @@ if graphmode
         end
     end
 end
+
+save([savepath 'workspace.mat'])
 
 X = ['Results saved in ', savepath];
 disp(X)
