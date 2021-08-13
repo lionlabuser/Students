@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%PREPARING CORR DATA FOR ANALYSIS%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\';
+savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\PartialCorr\';
 if ~isfolder(savepath)
     mkdir(savepath)
 end
@@ -11,7 +11,7 @@ channelmode = 1; %Faire les analyses sur les canaux
 ROImode = 1; %Faire les analyses sur les ROI
 
 connectivity = 'CORR'; %Modify 'COH' OR 'CORR'
-xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\PhysioRegressed_SatRespEKG\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
+xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\PhysioRegressed_SatRespEKG\PartialCorr\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
 exceltable = 'C:\data\Malnutrition\Resting\NIRS\Participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
 
 %%%%%% from StatMatrices of LIONIRS toolbox%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,7 +29,7 @@ end
 
 %Load the matrices
 groupeall = [];
-for isubject=2:size(info,1)
+for isubject = 2:size(info,1)
     id = isubject-1;
     MAT = load(fullfile(info{isubject,1},[info{isubject,2},'.mat']));
     DATA{id}.ZoneList = MAT.ZoneList;
@@ -48,7 +48,7 @@ for isubject=2:size(info,1)
     end
     
     %création liste des noms de sujets et liste du groupe de chacun%
-    list_subject{id} =DATA{id}.name;
+    list_subject{id} = DATA{id}.name;
     groupeall = [groupeall; info{isubject,4}];
 %     clear MAT
 end
@@ -126,24 +126,18 @@ MATallG1 = MATall(:,:,idG1);
 MATmeanG1 = squeeze(nanmean(MATallG1,3));
 MATstdG1 = std(MATall(:,:,idG1),0,3,'omitnan');
 MATvarG1 = var(MATall(:,:,idG1),0,3,'omitnan');
-%MATpctstdG1 = (MATstdG1./MATmeanG1)*100;
-%pbstd = sum(MATpctstdG1 > 75);
-%pbstdchG1 = ch(pbstd > 10);
 
 idG2 = find(groupeall==2);
 MATallG2 = MATall(:,:,idG2);
 MATmeanG2 = squeeze(nanmean(MATallG2,3));
 MATstdG2 = std(MATall(:,:,idG2),0,3,'omitnan');
 MATvarG2 = var(MATall(:,:,idG2),0,3,'omitnan');
-%MATpctstdG2 = (MATstdG2./MATmeanG2)*100;
-%pbstd = sum(MATpctstdG2 > 75);
-%pbstdchG2 = ch(pbstd > 10);
 
-clear id iname
+clear id iname 
 
 save([savepath 'workspacemat.mat'])
 
-clear ext raw txt names MAT matcorr isubject idsubject groupid info xlslistfile filepath name ZONEid ZoneList labelnode MATstdG1 MATstdG1 MATvarG1 MATvarG2
+clear ext raw txt names MAT matcorr isubject idsubject groupid info xlslistfile filepath name ZONEid ZoneList labelnode MATstdG1 MATstdG2 MATvarG1 MATvarG2
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Organizing the data')
@@ -156,7 +150,7 @@ T.Properties.VariableNames{'SEX_M_0_F_1_'} = 'SEX';
 
 if isequal(connectivity,'CORR') % créer des variables différente pour chaque variable démographique
     A=[];
-    A = erase(list_subject,'_HBO_Pearson');
+    A = erase(list_subject,'_HBO_PearsonPartcorr'); %Ajouter Partcorr si s'applique
     part = string(A');
     gr = groupeall;
     for p=1:numel(part)

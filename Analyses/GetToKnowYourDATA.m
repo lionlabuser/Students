@@ -2,9 +2,9 @@
 tic
 disp('Computing GetToKnowYourDATA')
 
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\';
+datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\PartialCorr\';
 load ([datapath 'workspace.mat'])
-load ([datapath 'workspacemat.mat'])
+%load ([datapath 'workspacemat.mat'])
 
 fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Mixte.txt',...
                          'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Region.txt',...
@@ -407,7 +407,7 @@ if graphmode
         savefig([savepath date '_HistFCch']);
         exportgraphics(gcf,[savepath 'HistFCch.png'])
 
-        clear histg1 histg2 pg1 pg2 x mu sigma f dim str limits
+        clear histg1 histg2 pg1 pg2 x mu sigma f dim str limits MmeanchG1 MmeanchG1part MmeanchG1ch MmeanchG2 MmeanchG2part MmeanchG2ch MstdchG1 MstdchG1part MstdchG1ch MstdchG2 MstdchG2part MstdchG2ch
 
     end
 
@@ -687,8 +687,8 @@ if graphmode
             ylabel('Proportion of the participants (%)');
             str = sprintf('%s Histogram of the participants FC values',ROIname);
             title(str);
-            savefig([savepath date '_HistROIPart']);
-            exportgraphics(gcf,[savepath 'HistROIPart.png'])
+            %savefig([savepath date '_HistROIPart']);
+            %exportgraphics(gcf,[savepath 'HistROIPart.png'])
             
             clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
             
@@ -727,7 +727,7 @@ if graphmode
             %savefig([savepath date '_HistROIRoi']);
             %exportgraphics(gcf,[savepath 'HistROIRoi.png'])
             
-            clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
+            clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel MmeanroiG1 MmeanroiG1p MmeanroiG1r MmeanroiG2 MmeanroiG2p MmeanroiG2r MstdroiG1 MstdroiG1p MstdroiG1r MstdroiG2 MstdroiG2p MstdroiG2r
             
             %     figure
             %     A = meanG1Aroi;
@@ -756,7 +756,6 @@ if graphmode
     
         MATmeanG1G2 = MATmeanG1 - MATmeanG2;
         MATmeanG2G1 = MATmeanG2 - MATmeanG1;
-        zonelabel = strrep(zone.label,'_',' '); %facultatif
 
         figure
         c = max([max(MATmeanG1G2,[],'all'), abs(min(MATmeanG1G2,[],'all'))]);
@@ -781,10 +780,10 @@ if graphmode
         savefig([savepath date '_MatG1G2']);
         exportgraphics(gcf,[savepath 'MatG1G2.png'])
         
-        clear c cmin cmax clims ax
+        clear c cmin cmax clims ax hG1G2
         
-        meandiff = mean(MATmeanG1G2,'all');
-        stddiff = std(MATmeanG1G2,0,'all');
+        meandiff = mean(MATmeanG1G2,'all','omitnan');
+        stddiff = std(MATmeanG1G2,0,'all','omitnan');
         tr = stddiff*2; %threshold de différence = 2 écarts type
         tf = (MATmeanG1G2>tr|MATmeanG1G2<-tr);
         MATG1G2 = MATmeanG1G2.*tf;
@@ -812,7 +811,7 @@ if graphmode
         savefig([savepath date '_MatSDG1G2']);
         exportgraphics(gcf,[savepath 'MatSDG1G2.png'])
         
-        clear meandiff stddiff tr tf c cmin cmax clims ax 
+        clear meandiff stddiff tr tf c cmin cmax clims ax hG1G2int
 
         datachG1G2 = MATvTBL.MAT2TBL(MATG1G2); %transformer la matrice en tableau
         tf = datachG1G2 ~= 0 & datachG1G2 > 0;
@@ -895,10 +894,10 @@ if graphmode
             title(str)
             
             
-            clear c cmin cmax clims ax str
+            clear c cmin cmax clims ax str hG1G2
             
-            meandiff = mean(MATroimeanG1G2{:,R},'all');
-            stddiff = std(MATroimeanG1G2{:,R},0,'all');
+            meandiff = mean(MATroimeanG1G2{:,R},'all','omitnan');
+            stddiff = std(MATroimeanG1G2{:,R},0,'all','omitnan');
             tr = stddiff*2; %threshold de différence = 2 écarts type
             tf = (MATroimeanG1G2{:,R}>tr|MATroimeanG1G2{:,R}<-tr);
             MATG1G2 = MATroimeanG1G2{:,R}.*tf;
@@ -921,7 +920,7 @@ if graphmode
             str = sprintf('%s Mean G1-G2 > 2SD',ROIname);
             title(str)
             
-            clear meandiff stddiff tr tf c cmin cmax clims ax str
+            clear meandiff stddiff tr tf c cmin cmax clims ax str hG1G2int
             
             DATG1G2 = MATvTBL.MAT2TBL(MATG1G2); %transformer la matrice en tableau
             tf = DATG1G2 ~= 0 & DATG1G2 > 0;
