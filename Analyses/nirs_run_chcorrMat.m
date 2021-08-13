@@ -4,7 +4,7 @@ function out = nirs_run_chcorrMat(job)
 %definition.
 
 
-NIRS = []; 
+NIRS = [];
 
 
 for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
@@ -84,36 +84,36 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
     for f=1:size(rDtp,1) %Loop over all files of a NIRS.mat
         d1 = fopen_NIR(rDtp{f,1},NC);
         
-         %load the noise marker dnan
-            mrk_type = 'bad_step';
-            mrk_type_arr = cellstr(mrk_type);
-            [dir1,fil1,~] = fileparts(rDtp{f});
-            vmrk_path = fullfile(dir1,[fil1 '.vmrk']);
-            [ind_dur_ch] = read_vmrk_find(vmrk_path,mrk_type_arr);
-            dnan = d1;
-            if ~isempty(ind_dur_ch)
-                %hwaitbar = waitbar(0);
-                for Idx = 1:NC %Loop over all channels
-                   % waitbar(Idx/NC,hwaitbar,'Nullifying bad intervals...');
-                    mrks = find(ind_dur_ch(:,3)==Idx | ind_dur_ch(:,3)==0);
-                    
-                    ind = ind_dur_ch(mrks,1);
-                    indf = ind + ind_dur_ch(mrks,2);
-                    
-                    for i = 1:numel(ind)
-                        if ind(i)-padtime < 1
-                            ind(i) = padtime+1;
-                        end
-                        if indf(i)+padtime > size(d1,2)
-                            indf(i) = size(d1,2)-padtime;
-                        end
-                        dnan(Idx,ind(i)-padtime:indf(i)+padtime) = NaN;
+        %load the noise marker dnan
+        mrk_type = 'bad_step';
+        mrk_type_arr = cellstr(mrk_type);
+        [dir1,fil1,~] = fileparts(rDtp{f});
+        vmrk_path = fullfile(dir1,[fil1 '.vmrk']);
+        [ind_dur_ch] = read_vmrk_find(vmrk_path,mrk_type_arr);
+        dnan = d1;
+        if ~isempty(ind_dur_ch)
+            %hwaitbar = waitbar(0);
+            for Idx = 1:NC %Loop over all channels
+                % waitbar(Idx/NC,hwaitbar,'Nullifying bad intervals...');
+                mrks = find(ind_dur_ch(:,3)==Idx | ind_dur_ch(:,3)==0);
+                
+                ind = ind_dur_ch(mrks,1);
+                indf = ind + ind_dur_ch(mrks,2);
+                
+                for i = 1:numel(ind)
+                    if ind(i)-padtime < 1
+                        ind(i) = padtime+1;
                     end
+                    if indf(i)+padtime > size(d1,2)
+                        indf(i) = size(d1,2)-padtime;
+                    end
+                    dnan(Idx,ind(i)-padtime:indf(i)+padtime) = NaN;
                 end
-                %close(hwaitbar);
-             else
-                disp(['Failed to nullify bad intervals for Subject ',int2str(filenb),', file ',int2str(f),'. No markers found in the .vmrk file. If you have already used the Step Detection function, your data may have no bad steps in it.']);
             end
+            %close(hwaitbar);
+        else
+            disp(['Failed to nullify bad intervals for Subject ',int2str(filenb),', file ',int2str(f),'. No markers found in the .vmrk file. If you have already used the Step Detection function, your data may have no bad steps in it.']);
+        end
         
         
         
@@ -128,10 +128,10 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                 if ML_new ~=zone.ml
                     disp(['List of channel from ', job.NIRSmat{filenb,1},' not concordant with the zone.'])
                     correctplotLst = 1;
-                end 
+                end
             end
             
-           
+            
             
             %ensure the zone are with the good channel for the subject it
             %mean always source a1b2 and detector A and the other of
@@ -206,35 +206,35 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
         
         if isfield(job.I_chcorrlist_type,'b_Pearson')
             if isfield(job.I_chcorrlist_type.b_Pearson.c_Pearson,'m_Pearson') %by segment
-            for i=1:numel(listHBO)
-                if listHBO(i)
-                    j = 1;
-                    while j<i %1:numel(listelectrode)
-                        if listHBO(j)
-                            d1ok = d1(listHBO(i,1),:);
-                            d2ok = d1(listHBO(j,1),:);
-                            matcorr(i,j,f)=corr(d1ok',d2ok');
-                            matcorr(j,i,f)= matcorr(i,j,f);
+                for i=1:numel(listHBO)
+                    if listHBO(i)
+                        j = 1;
+                        while j<i %1:numel(listelectrode)
+                            if listHBO(j)
+                                d1ok = d1(listHBO(i,1),:);
+                                d2ok = d1(listHBO(j,1),:);
+                                matcorr(i,j,f)=corr(d1ok',d2ok','Rows','pairwise'); %Modif KR
+                                matcorr(j,i,f)= matcorr(i,j,f);
+                            end
+                            j = j + 1;
                         end
-                        j = j + 1;
                     end
                 end
-            end
-            
-            for i=1:numel(listHBR)
-                if listHBR(i)
-                    j = 1;
-                    while j<i %1:numel(listelectrode)
-                        if  listHBO(j)
-                            d1ok = d1(listHBR(i,1),:);
-                            d2ok = d1(listHBR(j,1),:);
-                            matcorrHbR(i,j,f)=corr(d1ok',d2ok');
-                            matcorrHbR(j,i,f)= matcorrHbR(i,j,f);
+                
+                for i=1:numel(listHBR)
+                    if listHBR(i)
+                        j = 1;
+                        while j<i %1:numel(listelectrode)
+                            if  listHBO(j)
+                                d1ok = d1(listHBR(i,1),:);
+                                d2ok = d1(listHBR(j,1),:);
+                                matcorrHbR(i,j,f)=corr(d1ok',d2ok','Rows','pairwise'); %Modif KR
+                                matcorrHbR(j,i,f)= matcorrHbR(i,j,f);
+                            end
+                            j = j + 1;
                         end
-                        j = j + 1;
                     end
                 end
-            end
             elseif isfield(job.I_chcorrlist_type.b_Pearson.c_Pearson,'b_PearsonBootstrap') %by segment
                 fs = NIRS.Cf.dev.fs;                         % Sample frequency (Hz)
                 tseg = job.I_chcorrlist_type.b_Pearson.c_Pearson.b_PearsonBootstrap.i_TrialLenght_crossspectrum;
@@ -253,81 +253,366 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                 end
                 
                 %donot compute for nanbloc...
-            removetrial = [];            
-            for ibloc = 1:size(Bloc,1)              
-                datnan = dnan(:,Bloc(ibloc,1):Bloc(ibloc,2));
-                if sum(isnan(datnan(:)))
-                    removetrial = [removetrial,ibloc];    
-                 end
-            end
-            if ~isempty(removetrial)
-                Bloc(removetrial,:)=[];
-                totaltrialgood = size(Bloc,1);
-            else
-                totaltrialgood = size(Bloc,1);
-            end
-                
-         for ibloc = 1:size(Bloc,1)
-                ibloc                 
-                dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
-                
-%                 figure; plot(d1')
-%                 figure;plot(dat')
-           for i=1:numel(listHBO)
-                if listHBO(i)
-                    j = 1;
-                    while j<i %1:numel(listelectrode)
-                        if listHBO(j)
-                            d1ok = dat(listHBO(i,1),:);
-                            d2ok = dat(listHBO(j,1),:);
-                            matcorr(i,j,ibloc)=corr(d1ok',d2ok');
-                            matcorr(j,i,ibloc)= matcorr(i,j,ibloc);
-                        end
-                        j = j + 1;
-                    end 
-                end
-            end
-            
-            for i=1:numel(listHBR)
-                if listHBR(i)
-                    j = 1;
-                    while j<i %1:numel(listelectrode)
-                        if  listHBO(j)
-                            d1ok = dat(listHBR(i,1),:);
-                            d2ok = dat(listHBR(j,1),:);
-                            matcorrHbR(i,j,ibloc)=corr(d1ok',d2ok');
-                            matcorrHbR(j,i,ibloc)= matcorrHbR(i,j,ibloc);
-                        end
-                        j = j + 1;
+                removetrial = [];
+                for ibloc = 1:size(Bloc,1)
+                    datnan = dnan(:,Bloc(ibloc,1):Bloc(ibloc,2));
+                    if sum(isnan(datnan(:))) > 50/100*numel(datnan) %modif KR ajout d'un critère de 50% pour rejet
+                        removetrial = [removetrial,ibloc];
                     end
                 end
-            end
-         
-         end
+                if ~isempty(removetrial)
+                    Bloc(removetrial,:)=[];
+                    totaltrialgood = size(Bloc,1);
+                else
+                    totaltrialgood = size(Bloc,1);
+                end
                 
-            end
+                %modif KR%%
+                if ~any(totaltrialgood)
+                    fprintf('%s not computed not enough good data\n',filloutput)
+                else
+                    fprintf('%s good blocks found for %s\n',num2str(totaltrialgood),filloutput)
+                end
                 
-         %zscore outlier on matcorr matcorrHbR trial distribution ensure no outlier due to forget artifact.            
-         meantrial =  nanmean(matcorr(:,:,:),3);
-         stdtrial =  nanstd(matcorr(:,:,:),0,3);
-         ztrial = (matcorr- repmat( meantrial,1,1,size(matcorr,3)))./repmat( stdtrial,1,1,size(matcorr,3));
-          idoutlier =  find(abs(ztrial)>job.I_chcorrlist_type.b_Pearson.c_Pearson.b_PearsonBootstrap.i_OutlierControl_crossspectrum);
-         % zscore across trial to detect outlier trial and set them to nan. 
-         if ~isempty(idoutlier)
-            matcorr(idoutlier)=nan;
-         end
-         meantrial =  nanmean(matcorrHbR(:,:,:),3);
-         stdtrial =  nanstd(matcorrHbR(:,:,:),0,3);
-         ztrial = (matcorrHbR- repmat( meantrial,1,1,size(matcorrHbR,3)))./repmat( stdtrial,1,1,size(matcorrHbR,3));
-         idoutlier =  find(abs(ztrial)>job.I_chcorrlist_type.b_Pearson.c_Pearson.b_PearsonBootstrap.i_OutlierControl_crossspectrum);
-         % zscore across trial to detect outlier trial and set them to nan. 
-         if ~isempty(idoutlier)
-            matcorrHbR(idoutlier)=nan;
-         end
-         
-         
+                fprintf(1,'Computing bloc number:    \n');
+                %%Modif KR fin %%
+                
+                for ibloc = 1:size(Bloc,1)
+                    %%Modif KR%%
+                    str = num2str(ibloc); %ibloc
+                    if length(str) < 3
+                        if length(str) == 1
+                            str = append(str,'  ');
+                        elseif length(str) == 2
+                            str = append(str,' ');
+                        end
+                    end
+                    fprintf(1,'\b\b\b%s',str);
+                    %%Modif KR fin%%
+                    
+                    dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
+                    
+                    %                 figure; plot(d1')
+                    %                 figure;plot(dat')
+                    for i=1:numel(listHBO)
+                        if listHBO(i)
+                            j = 1;
+                            while j<i %1:numel(listelectrode)
+                                if listHBO(j)
+                                    d1ok = dat(listHBO(i,1),:);
+                                    d2ok = dat(listHBO(j,1),:);
+                                    matcorr(i,j,ibloc)=corr(d1ok',d2ok','Rows','pairwise');  %Modif KR
+                                    matcorr(j,i,ibloc)= matcorr(i,j,ibloc);
+                                end
+                                j = j + 1;
+                            end
+                        end
+                    end
+                    
+                    for i=1:numel(listHBR)
+                        if listHBR(i)
+                            j = 1;
+                            while j<i %1:numel(listelectrode)
+                                if  listHBO(j)
+                                    d1ok = dat(listHBR(i,1),:);
+                                    d2ok = dat(listHBR(j,1),:);
+                                    matcorrHbR(i,j,ibloc)=corr(d1ok',d2ok','Rows','pairwise');  %Modif KR
+                                    matcorrHbR(j,i,ibloc)= matcorrHbR(i,j,ibloc);
+                                end
+                                j = j + 1;
+                            end
+                        end
+                    end
+                    
+                end
+                fprintf(1,'\n'); %Modif KR
+            end
+            
+            %zscore outlier on matcorr matcorrHbR trial distribution ensure no outlier due to forget artifact.
+            meantrial =  nanmean(matcorr(:,:,:),3);
+            stdtrial =  nanstd(matcorr(:,:,:),0,3);
+            ztrial = (matcorr- repmat( meantrial,1,1,size(matcorr,3)))./repmat( stdtrial,1,1,size(matcorr,3));
+            idoutlier =  find(abs(ztrial)>job.I_chcorrlist_type.b_Pearson.c_Pearson.b_PearsonBootstrap.i_OutlierControl_crossspectrum);
+            % zscore across trial to detect outlier trial and set them to nan.
+            if ~isempty(idoutlier)
+                matcorr(idoutlier)=nan;
+            end
+            meantrial =  nanmean(matcorrHbR(:,:,:),3);
+            stdtrial =  nanstd(matcorrHbR(:,:,:),0,3);
+            ztrial = (matcorrHbR- repmat( meantrial,1,1,size(matcorrHbR,3)))./repmat( stdtrial,1,1,size(matcorrHbR,3));
+            idoutlier =  find(abs(ztrial)>job.I_chcorrlist_type.b_Pearson.c_Pearson.b_PearsonBootstrap.i_OutlierControl_crossspectrum);
+            % zscore across trial to detect outlier trial and set them to nan.
+            if ~isempty(idoutlier)
+                matcorrHbR(idoutlier)=nan;
+            end
+            
+        elseif isfield(job.I_chcorrlist_type,'b_PearsonPartcorr')
+            if isfield(job.I_chcorrlist_type.b_PearsonPartcorr.c_PearsonPartcorr,'m_PearsonPartcorr') %by segment
+                d1ok = dat(listHBO,:);
+                matcorr(:,:,f)= partialcorr(d1ok','Rows','pairwise');
+                d2ok = dat(listHBR,:);
+                matcorrHbR(:,:,f)= partialcorr(d2ok','Rows','pairwise');
+                
+            elseif isfield(job.I_chcorrlist_type.b_PearsonPartcorr.c_PearsonPartcorr,'b_PearsonPartcorrBootstrap') %by segment
+                fs = NIRS.Cf.dev.fs;                         % Sample frequency (Hz)
+                tseg = job.I_chcorrlist_type.b_PearsonPartcorr.c_PearsonPartcorr.b_PearsonPartcorrBootstrap.i_TrialLenght_crossspectrum;
+                t = 0:1/fs:tseg;
+                Bsize = numel(t);
+                n = size(d1',1);
+                p =floor(n/Bsize);
+                nb_random_sample = job.I_chcorrlist_type.b_PearsonPartcorr.c_PearsonPartcorr.b_PearsonPartcorrBootstrap.i_RandomSample_crossspectrum;
+                indbloc = 1:Bsize:n;
+                maxval = n-Bsize;
+                idstart=randi(maxval,nb_random_sample,1);
+                
+                %definition des blocs on arrete
+                for ibloc = 1:numel(idstart)
+                    %pstart and pstop for each bloc
+                    Bloc(ibloc,:) = [idstart(ibloc), idstart(ibloc)+Bsize];
+                end
+                
+                %donot compute for nanbloc...
+                removetrial = [];
+                for ibloc = 1:size(Bloc,1)
+                    datnan = dnan(:,Bloc(ibloc,1):Bloc(ibloc,2));
+                    if sum(isnan(datnan(:))) > 50/100*numel(datnan) %modif KR ajout d'un critère de 50% pour rejet
+                        removetrial = [removetrial,ibloc];
+                    end
+                end
+                if ~isempty(removetrial)
+                    Bloc(removetrial,:)=[];
+                    totaltrialgood = size(Bloc,1);
+                else
+                    totaltrialgood = size(Bloc,1);
+                end
+                
+                if ~any(totaltrialgood)
+                    fprintf('%s not computed not enough good data\n',filloutput)
+                else
+                    fprintf('%s good blocks found for %s\n',num2str(totaltrialgood),filloutput)
+                end
+                
+                %nan values check%%
+                nantf = isnan(d1);
+                x = 1;
+                for i = 1:size(d1,1) % for each channel
+                    if sum(nantf(i,:)) == size(d1,2) %If all NaNs
+                        idxbadch(x,1) = i; %list of bad channels that are completely NaN in the data
+                        x = x + 1;
+                    else
+                    end
+                end
+                
+                if ~exist('idxbadch','var')
+                   idxbadch = [];
+                end
+                    
+                str = num2str(idxbadch(:).');
+                fprintf('NaN channels: %s\n',str)
+                idgoodch = NIRS.Cf.H.C.ok(:,f); %list of good channels on the NIRS.mat
+                idxgoodch = find(~idgoodch);
+                str = num2str(idxgoodch(:).');
+                fprintf('Bad channels: %s\n',str)
+                clear str
+                idbadch = zeros(size(idgoodch));
+                idbadch(idxbadch) = 1;
+                check = mean(idbadch + idgoodch);
+                if check ~= 1
+                    disp('Number of NaN channels different from the NIRS.mat Bad channels, All channels will be excluded')
+                    idxallbad = union(idxbadch,idxgoodch);
+                    idallbad = zeros(NC, 1);
+                    idallbad(idxallbad) = 1;
+                    idallbadokHBO = idallbad(listHBO,1);
+                    idallbadokHBR = idallbad(listHBR,1);
+                    %idbadHBO = idbadch(1:NC/2);
+                    %idbadHBR = idbadch(NC/2+1: NC);
+                    idokHBO = ~idallbadokHBO;
+                    idokHBR = ~idallbadokHBR;
+                end
+                
+                matcorr = nan(sum(idokHBO), sum(idokHBO),nb_random_sample); %
+                matcorrHbR = nan(sum(idokHBO), sum(idokHBO),nb_random_sample);%
+                nanmatcorr = NaN(length(listHBO),length(listHBO),nb_random_sample); %
+                nanmatcorrHbR = NaN(length(listHBR),length(listHBR),nb_random_sample); %
+                
+                fprintf(1,'Computing bloc number:    \n');
+                for ibloc = 1:size(Bloc,1)
+                    str = num2str(ibloc); %ibloc
+                    if length(str) < 3
+                        if length(str) == 1
+                            str = append(str,'  ');
+                        elseif length(str) == 2
+                            str = append(str,' ');
+                        end
+                    end
+                    fprintf(1,'\b\b\b%s',str);
+                    
+                    dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
+                    datHBO = dat(listHBO,:);
+                    idxokHBO = find(idokHBO);
+                    d1ok = datHBO(idxokHBO,:);
+                    matcorr(:,:,ibloc)= partialcorr(d1ok','Rows','pairwise');
+
+                    k = 0;
+                    for i = 1:numel(idxokHBO) %for each channel pair
+                        l = 0;
+                        if listHBO(i)
+                            if idokHBO(i+k) == 1 %if HBO is good
+                               j = 1;
+                                while j<i
+                                    if listHBO(j)
+                                        if idokHBO(j+l) == 1
+                                            corr = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                        elseif idokHBO(j+l) == 0
+                                            for l = l:(numel(listHBO))
+                                                if idokHBO(j+l) == 0
+                                                    continue
+                                                elseif idokHBO(j+l) == 1
+                                                    break
+                                                end
+                                            end
+                                            corr = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                        end
+                                    end
+                                    j = j + 1; 
+                                end
+                            elseif idokHBO(i+k) == 0 % && idokHBO(i+k+1) == 1
+                                j = 1;
+                                for k = k:(numel(listHBO))
+                                    if idokHBO(i+k) == 0
+                                        continue
+                                    elseif idokHBO(i+k) == 1
+                                        break
+                                    end
+                                end
+                                while j<i
+                                    if listHBO(j) 
+                                        if idokHBO(j+l) == 1
+                                            corr = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                        elseif idokHBO(j+l) == 0
+                                            for l = l:(numel(listHBO))
+                                                if idokHBO(j+l) == 0
+                                                    continue
+                                                elseif idokHBO(j+l) == 1
+                                                    break
+                                                end
+                                            end
+                                            corr = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                        end
+                                    end
+                                    j = j + 1; 
+                                end
+                            end
+                        end
+                    end
+
+                    datHBR = dat(listHBR,:);
+                    idxokHBR = find(idokHBR);
+                    d2ok = datHBR(idxokHBR,:);
+                    matcorrHbR(:,:,ibloc)= partialcorr(d2ok','Rows','pairwise');
+
+                    k = 0;
+                    for i = 1:numel(idxokHBR) %for each channel pair
+                        l = 0;
+                        if listHBR(i)
+                            if idokHBR(i+k) == 1 %if HBO is good
+                               j = 1;
+                                while j<i
+                                    if listHBR(j)
+                                        if idokHBR(j+l) == 1
+                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                        elseif idokHBR(j+l) == 0
+                                            for l = l:(numel(listHBR))
+                                                if idokHBR(j+l) == 0
+                                                    continue
+                                                elseif idokHBR(j+l) == 1
+                                                    break
+                                                end
+                                            end
+                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                        end
+                                    end
+                                    j = j + 1; 
+                                end
+                            elseif idokHBR(i+k) == 0 % && idokHBO(i+k+1) == 1
+                                j = 1;
+                                for k = k:(numel(listHBR))
+                                    if idokHBR(i+k) == 0
+                                        continue
+                                    elseif idokHBR(i+k) == 1
+                                        break
+                                    end
+                                end
+                                while j<i
+                                    if listHBR(j) 
+                                        if idokHBR(j+l) == 1
+                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                        elseif idokHBR(j+l) == 0
+                                            for l = l:(numel(listHBR))
+                                                if idokHBR(j+l) == 0
+                                                    continue
+                                                elseif idokHBR(j+l) == 1
+                                                    break
+                                                end
+                                            end
+                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                        end
+                                    end
+                                    j = j + 1; 
+                                end
+                            end
+                        end   
+                    end  
+                end
+                fprintf(1,'\n');
+                matcorr = nanmatcorr;
+                matcorrHbR = nanmatcorrHbR;
+            end
+            
+            
+            % check of the matrices
+            check1 = nanmean(matcorr(:));
+            check2 = nanmean(matcorrHbR(:));
+            if isnan(check1) | isnan(check2)
+                fprintf('Warning, the computed matrix for %s is NaN', filloutput)
+            end
+            
+            %zscore outlier on matcorr matcorrHbR trial distribution ensure no outlier due to forget artifact.
+            meantrial =  nanmean(matcorr(:,:,:),3);
+            stdtrial =  nanstd(matcorr(:,:,:),0,3);
+            ztrial = (matcorr- repmat( meantrial,1,1,size(matcorr,3)))./repmat( stdtrial,1,1,size(matcorr,3));
+            idoutlier =  find(abs(ztrial)>job.I_chcorrlist_type.b_PearsonPartcorr.c_PearsonPartcorr.b_PearsonPartcorrBootstrap.i_OutlierControl_crossspectrum);
+            % zscore across trial to detect outlier trial and set them to nan.
+            if ~isempty(idoutlier)
+                matcorr(idoutlier)=nan;
+            end
+            meantrial =  nanmean(matcorrHbR(:,:,:),3);
+            stdtrial =  nanstd(matcorrHbR(:,:,:),0,3);
+            ztrial = (matcorrHbR- repmat( meantrial,1,1,size(matcorrHbR,3)))./repmat( stdtrial,1,1,size(matcorrHbR,3));
+            idoutlier =  find(abs(ztrial)>job.I_chcorrlist_type.b_PearsonPartcorr.c_PearsonPartcorr.b_PearsonPartcorrBootstrap.i_OutlierControl_crossspectrum);
+            % zscore across trial to detect outlier trial and set them to nan.
+            if ~isempty(idoutlier)
+                matcorrHbR(idoutlier)=nan;
+            end
+            
         elseif isfield(job.I_chcorrlist_type,'b_Hilbert') %hilbert joint probability distribution
-            if isfield(job.I_chcorrlist_type.b_Hilbert.c_Hilbert,'m_Hilbert') %by segment       
+            if isfield(job.I_chcorrlist_type.b_Hilbert.c_Hilbert,'m_Hilbert') %by segment
                 hil = hilbert(d1);
                 for i=1:numel(listHBO)
                     if listHBO(i)
@@ -339,10 +624,10 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 % k for join phase distribution see Moldavi 2013
                                 matcorr(i,j,f) = circ_kurtosis(angle(z1)'-angle(z2)');
                                 matcorr(j,i,f) = matcorr(i,j,f);
-%                                     figure;subplot(3,1,1);plot(d1(listHBR(i,1),:),'b','displayname', 'ch 1');hold on;plot(d1(listHBR(j,1),:),'r','displayname', 'ch 2')
-%                                     subplot(3,2,3); hist(angle(z1),100);title('ch 1');subplot(3,2,4);hist(angle(z2),100);title('ch 2')
-%                                     subplot(3,1,3);hist(angle(z1)'-angle(z2)',100), title(['Phase joint probability=', num2str(circ_kurtosis(angle(z1)'-angle(z2)'))])
-%                                   
+                                %                                     figure;subplot(3,1,1);plot(d1(listHBR(i,1),:),'b','displayname', 'ch 1');hold on;plot(d1(listHBR(j,1),:),'r','displayname', 'ch 2')
+                                %                                     subplot(3,2,3); hist(angle(z1),100);title('ch 1');subplot(3,2,4);hist(angle(z2),100);title('ch 2')
+                                %                                     subplot(3,1,3);hist(angle(z1)'-angle(z2)',100), title(['Phase joint probability=', num2str(circ_kurtosis(angle(z1)'-angle(z2)'))])
+                                %
                             end
                             j = j + 1;
                         end
@@ -363,7 +648,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                         end
                     end
                 end
-       
+                
                 
             elseif isfield(job.I_chcorrlist_type.b_Hilbert.c_Hilbert,'b_HilbertBootstrap')  %circular bootstrap
                 fs = NIRS.Cf.dev.fs;                         % Sample frequency (Hz)
@@ -381,24 +666,24 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                     %pstart and pstop for each bloc
                     Bloc(ibloc,:) = [idstart(ibloc), idstart(ibloc)+Bsize];
                 end
-                   removetrial = [];            
-            for ibloc = 1:size(Bloc,1)              
-                datnan = dnan(:,Bloc(ibloc,1):Bloc(ibloc,2));
-                if sum(isnan(datnan(:)))
-                    removetrial = [removetrial,ibloc];    
-                 end
-            end
-            if ~isempty(removetrial)
-                Bloc(removetrial,:)=[];
-                totaltrialgood = size(Bloc,1);
-            else
-                totaltrialgood = size(Bloc,1);
-            end
+                removetrial = [];
+                for ibloc = 1:size(Bloc,1)
+                    datnan = dnan(:,Bloc(ibloc,1):Bloc(ibloc,2));
+                    if sum(isnan(datnan(:)))
+                        removetrial = [removetrial,ibloc];
+                    end
+                end
+                if ~isempty(removetrial)
+                    Bloc(removetrial,:)=[];
+                    totaltrialgood = size(Bloc,1);
+                else
+                    totaltrialgood = size(Bloc,1);
+                end
                 for ibloc = 1:size(Bloc,1)
                     ibloc
                     tic
                     dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
-                   hil = hilbert(dat);
+                    hil = hilbert(dat);
                     for i=1:numel(listHBO)
                         if listHBO(i)
                             j = 1;
@@ -430,8 +715,8 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                         end
                     end
                     toc
-                    clear dat                    
-                end       
+                    clear dat
+                end
                 
                 %zscore outlier on matcorr matcorrHbR trial distribution ensure no outlier due to forget artifact.
                 meantrial =  nanmean(matcorr(:,:,:),3);
@@ -449,7 +734,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                 % zscore across trial to detect outlier trial and set them to nan.
                 if ~isempty(idoutlier)
                     matcorrHbR(idoutlier)=nan;
-                end                        
+                end
             end
             
         elseif isfield(job.I_chcorrlist_type,'b_Granger') %Granger causality
@@ -568,9 +853,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
             [y, f_fft]= fft_EEGseries(dat,fs);
             yall = zeros(size(y,1),size(y,2),size(Bloc,1));
             
-            %could be more efficient but do the job for now ! 
+            %could be more efficient but do the job for now !
             removetrial = [];
-
+            
             for ibloc = 1:size(Bloc,1)
                 dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
                 dat=dat - mean(dat,2)*ones(1,Bsize+1) ;
@@ -580,10 +865,10 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                 else
                     [y, f_fft]= fft_EEGseries(dat,fs);
                     yall(:,:,ibloc )=y;
-                 end
+                end
             end
-%             t= 1/fs:1/fs:1/fs*size(d1,2)
-%             t(Bloc)
+            %             t= 1/fs:1/fs:1/fs*size(d1,2)
+            %             t(Bloc)
             if ~isempty(removetrial)
                 yall(:,:,removetrial)=[];
                 totaltrialgood = size(yall,3);
@@ -594,7 +879,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
             load(job.I_chcorrlist_type.b_crossspectrum.i_ch_crossspectrum{1},'-mat');
             
             power = yall.*conj(yall)/n;
-            if isfield(job.b_nodelist,'I_chcorrlist')  
+            if isfield(job.b_nodelist,'I_chcorrlist')
                 matcorr= nan(numel(listname),numel(listname),1);
                 matcorrHbR= nan(numel(listname),numel(listname),1);
             end
@@ -640,68 +925,68 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
             power = yall.*conj(yall)/n;
             zonelist = 1:numel(zone.plotLst);
             hplot = figure;
-%             try
-%                 for izone=1:numel(zonelist)
-%                     subplot(ceil(sqrt(numel(zone.plotLst))),ceil(sqrt(numel(zone.plotLst))),izone);hold on
-%                     list =  zoneuse.plotLst{zonelist(izone)};
-%                     colorlst= jet(numel(list));
-%                     for i=1:numel(list)
-%                         sumnan = sum(sum(isnan(power(:,list(i),:)),3),1);
-%                         if strcmp(NIRS.Cf.dev.n,'ISS')
-%                             srs = SDPairs2strboxy_ISS(ML_new(list(i),1));
-%                             det = SDDet2strboxy_ISS(ML_new(list(i),2));
-%                         else
-%                             srs = SDPairs2strboxy(ML_new(list(i),1));
-%                             det = SDDet2strboxy(ML_new(list(i),2));
-%                         end
-%                         plot(f_fft,nanmean(log10(power(:,list(i),:)),3),'color',colorlst(i,:),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
-%                         ylim([minval,maxval]);
-%                         plot([f_fft(startF),f_fft(startF)],[minval,maxval],'r')
-%                         plot([f_fft(stopF),f_fft(stopF)],[minval,maxval],'r')
-%                     end
-%                     title(zoneuse.label{zonelist(izone)})
-%                 end
-%             catch
-%                 subplot(1,1,1);hold on
-%                 list = 1:size(power,2);
-%                     for i=1:numel(list)
-%                         sumnan = sum(sum(isnan(power(:,list(i),:)),3),1);
-%                         if strcmp(NIRS.Cf.dev.n,'ISS')
-%                             srs = SDPairs2strboxy_ISS(ML_new(list(i),1));
-%                             det = SDDet2strboxy_ISS(ML_new(list(i),2));
-%                         else
-%                             srs = SDPairs2strboxy(ML_new(list(i),1));
-%                             det = SDDet2strboxy(ML_new(list(i),2));
-%                         end
-%                         plot(f_fft,nanmean(log10(power(:,list(i),:)),3),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
-%                         ylim([minval,maxval]);
-%                         plot([f_fft(startF),f_fft(startF)],[minval,maxval],'r')
-%                         plot([f_fft(stopF),f_fft(stopF)],[minval,maxval],'r')
-%                     end
-%             end
-%             avgfft = nanmean(nanmean(log10(power(startF:stopF,:,:)),3),2);
-%             interval  = startF:stopF;
-%             [val,id] = max(avgfft);
-%             tablepeak(f,1) = f_fft(interval(id));
-%             %             figure
-%             %
-%             %              plot(f_fft(startF:stopF),avgfft,'color',colorlst(i,:),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
-%             %
-%             
-%             pathout = job.I_chcorrlistoutpath;
-%             if ~isdir(pathout)
-%                 mkdir(pathout);
-%             end
-%             saveas(hplot,  [pathout,filloutput,sprintf('%03.0f', f),'FFTPLOT.fig'],'fig')
-%             saveas(hplot,  [pathout,filloutput,sprintf('%03.0f', f),'FFTPLOT.jpg'],'jpg')
-%             if job.I_chcorrlist_type.b_crossspectrum.m_savefft_crossspectrum
-%                 if  isfield(job.b_nodelist,'I_zonecorrlist') 
-%                     save([pathout,filloutput,'ComplexFFT.mat'],'yall','f_fft','ML_new','Bloc','ZoneList')
-%                 elseif isfield(job.b_nodelist,'I_chcorrlist') 
-%                     save([pathout,filloutput,'ComplexFFT.mat'],'yall','f_fft','listHBOch','listHBRch','ML_new','Bloc')
-%                 end
-%             end
-%             close(hplot)
+            %             try
+            %                 for izone=1:numel(zonelist)
+            %                     subplot(ceil(sqrt(numel(zone.plotLst))),ceil(sqrt(numel(zone.plotLst))),izone);hold on
+            %                     list =  zoneuse.plotLst{zonelist(izone)};
+            %                     colorlst= jet(numel(list));
+            %                     for i=1:numel(list)
+            %                         sumnan = sum(sum(isnan(power(:,list(i),:)),3),1);
+            %                         if strcmp(NIRS.Cf.dev.n,'ISS')
+            %                             srs = SDPairs2strboxy_ISS(ML_new(list(i),1));
+            %                             det = SDDet2strboxy_ISS(ML_new(list(i),2));
+            %                         else
+            %                             srs = SDPairs2strboxy(ML_new(list(i),1));
+            %                             det = SDDet2strboxy(ML_new(list(i),2));
+            %                         end
+            %                         plot(f_fft,nanmean(log10(power(:,list(i),:)),3),'color',colorlst(i,:),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
+            %                         ylim([minval,maxval]);
+            %                         plot([f_fft(startF),f_fft(startF)],[minval,maxval],'r')
+            %                         plot([f_fft(stopF),f_fft(stopF)],[minval,maxval],'r')
+            %                     end
+            %                     title(zoneuse.label{zonelist(izone)})
+            %                 end
+            %             catch
+            %                 subplot(1,1,1);hold on
+            %                 list = 1:size(power,2);
+            %                     for i=1:numel(list)
+            %                         sumnan = sum(sum(isnan(power(:,list(i),:)),3),1);
+            %                         if strcmp(NIRS.Cf.dev.n,'ISS')
+            %                             srs = SDPairs2strboxy_ISS(ML_new(list(i),1));
+            %                             det = SDDet2strboxy_ISS(ML_new(list(i),2));
+            %                         else
+            %                             srs = SDPairs2strboxy(ML_new(list(i),1));
+            %                             det = SDDet2strboxy(ML_new(list(i),2));
+            %                         end
+            %                         plot(f_fft,nanmean(log10(power(:,list(i),:)),3),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
+            %                         ylim([minval,maxval]);
+            %                         plot([f_fft(startF),f_fft(startF)],[minval,maxval],'r')
+            %                         plot([f_fft(stopF),f_fft(stopF)],[minval,maxval],'r')
+            %                     end
+            %             end
+            %             avgfft = nanmean(nanmean(log10(power(startF:stopF,:,:)),3),2);
+            %             interval  = startF:stopF;
+            %             [val,id] = max(avgfft);
+            %             tablepeak(f,1) = f_fft(interval(id));
+            %             %             figure
+            %             %
+            %             %              plot(f_fft(startF:stopF),avgfft,'color',colorlst(i,:),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
+            %             %
+            %
+            %             pathout = job.I_chcorrlistoutpath;
+            %             if ~isdir(pathout)
+            %                 mkdir(pathout);
+            %             end
+            %             saveas(hplot,  [pathout,filloutput,sprintf('%03.0f', f),'FFTPLOT.fig'],'fig')
+            %             saveas(hplot,  [pathout,filloutput,sprintf('%03.0f', f),'FFTPLOT.jpg'],'jpg')
+            %             if job.I_chcorrlist_type.b_crossspectrum.m_savefft_crossspectrum
+            %                 if  isfield(job.b_nodelist,'I_zonecorrlist')
+            %                     save([pathout,filloutput,'ComplexFFT.mat'],'yall','f_fft','ML_new','Bloc','ZoneList')
+            %                 elseif isfield(job.b_nodelist,'I_chcorrlist')
+            %                     save([pathout,filloutput,'ComplexFFT.mat'],'yall','f_fft','listHBOch','listHBRch','ML_new','Bloc')
+            %                 end
+            %             end
+            %             close(hplot)
             
             for i=1:numel(listHBO)
                 if listHBO(i)
@@ -767,213 +1052,213 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                     end
                 end
             end
-%        elseif 0 %test fft by bloc....
-%             
-%             %first fft
-%             fs = NIRS.Cf.dev.fs;                         % Sample frequency (Hz)
-%             %             if 0 %Matlab fft
-%             %                 m = size(d1,2);          % Window length
-%             %                 n = pow2(nextpow2(m));  % Transform length
-%             %                 y = fft((d1-1)' ,n);           % DFT
-%             %                 f_fft = (0:n-1)*(fs/n);     % Frequency range
-%             %                 yfft(:,:,f) = y;
-%             %             else % Eduardo FFT
-%             %                 [y, f_fft]= fft_EEGseries(d1,fs);
-%             %                 yfft(:,:,f) = y;
-%             %                 n = numel(f_fft)
-%             %             end
-%             %            power = y.*conj(y)/n;   % Power of the DFT
-%             
-%             tseg = job.I_chcorrlist_type.b_crossspectrum.i_TrialLenght_crossspectrum;
-%             t = 0:1/fs:tseg;
-%             Bsize = numel(t);
-%             n = size(d1',1);
-%             p =floor(n/Bsize);
-%             nb_random_sample = job.I_chcorrlist_type.b_crossspectrum.i_RandomSample_crossspectrum;
-%             indbloc = 1:Bsize:n;
-%             maxval = n-Bsize;
-%             
-%             dat = d1; %whole bloc as is already segmented
-%             [y, f_fft]= fft_EEGseries(d1,fs);
-%             % yall = zeros(size(y,1),size(y,2));
-%             
-%             %             removetrial = [];
-%             %             for ibloc = 1:size(Bloc,1)
-%             %                 dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
-%             %                 dat=dat - mean(dat,2)*ones(1,Bsize+1) ;
-%             %                 if sum(isnan(dat(:)))
-%             %                     removetrial = [removetrial,ibloc];
-%             %                 else
-%             %                     [y, f_fft]= fft_EEGseries(dat,fs);
-%             %                     yall(:,:,ibloc)=y;
-%             %                 end
-%             %             end
-%             %             if ~isempty(removetrial)
-%             %                 yall(:,:,removetrial)=[];
-%             %                 totaltrialgood = size(yall,3);
-%             %             else
-%             %                 totaltrialgood = size(yall,3);
-%             %             end
-%             
-%             yall=y
-%             power = yall.*conj(yall)/n;
-%             
-%             matcorr= nan(numel(listname),numel(listname),1);
-%             matcorrHbR= nan(numel(listname),numel(listname),1);
-%             freq = job.I_chcorrlist_type.b_crossspectrum.i_Freq_crossspectrum;
-%             startF =sum(f_fft<=freq(1));
-%             stopF  =sum(f_fft<=freq(end));
-%             
-%             %             % Outlier zscore by ch and fr
-%             %             for ich = 1:size(power,2)%channel
-%             %                 removetrial = zeros(size(power,3),1);
-%             %                 for ifr=startF:stopF%freq
-%             %                     list =find(abs(zscore(power(ifr,ich,:)))>job.I_chcorrlist_type.b_crossspectrum.i_OutlierControl_crossspectrum );
-%             %                     if ~isempty(list)
-%             %                         removetrial(list)=1;
-%             %                     end
-%             %                 end
-%             %                 idbad = find(removetrial);
-%             %                 yall(startF:stopF,ich, idbad)=nan;
-%             %             end
-%             %Load zone for display spectrum
-%             load(job.I_chcorrlist_type.b_crossspectrum.i_ch_crossspectrum{1},'-mat');
-%             ML_new = ML_new;
-%             ML_old = zone.ml;
-%             zoneuse = zone;
-%             for i = 1:numel(zone.plotLst)
-%                 plotLst =  zone.plotLst{i};
-%                 plotLstnew = [];
-%                 plotold = zone.plot{i};
-%                 plotnew = [];
-%                 for indplot = 1:numel(plotLst)
-%                     a = plotLst(indplot);
-%                     lista = ML_old(a,:);
-%                     newid = find(ML_new(:,1) == lista(1) & ML_new(:,2) == lista(2) & ML_new(:,3) == lista(3) & ML_new(:,4) == lista(4));
-%                     if ~isempty(newid)
-%                         plotLstnew=[plotLstnew;newid];
-%                         plotnew = [plotnew;plotold(indplot,:)];
-%                     end
-%                 end
-%                 zoneuse.plotLst{i} = plotLstnew;
-%                 zoneuse.plot{i}=plotnew;
-%             end
-%             maxval = max(max(nanmean(log10(power(2:end,:,:)),3)))+2;
-%             minval =  min(min(nanmean(log10(power(2:end,:,:)),3)))-2;
-%             power = yall.*conj(yall)/n;
-%             
-%             zonelist = 1:numel(zone.plotLst);
-%             hplot = figure;
-%             for izone=1:numel(zonelist)
-%                 subplot(ceil(sqrt(numel(zone.plotLst))),ceil(sqrt(numel(zone.plotLst))),izone);hold on
-%                 list =  zoneuse.plotLst{zonelist(izone)};
-%                 colorlst= jet(numel(list));
-%                 for i=1:numel(list)
-%                     sumnan = sum(sum(isnan(power(:,list(i),:)),3),1);
-%                     if strcmp(NIRS.Cf.dev.n,'ISS')
-%                         srs = SDPairs2strboxy_ISS(ML_new(list(i),1));
-%                         det = SDDet2strboxy_ISS(ML_new(list(i),2));
-%                     else
-%                         srs = SDPairs2strboxy(ML_new(list(i),1));
-%                         det = SDDet2strboxy(ML_new(list(i),2));
-%                     end
-%                     plot(f_fft,nanmean(log10(power(:,list(i),:)),3),'color',colorlst(i,:),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
-%                     %ylim([minval,maxval]);
-%                     plot([f_fft(startF),f_fft(startF)],[minval,maxval],'r')
-%                     plot([f_fft(stopF),f_fft(stopF)],[minval,maxval],'r')
-%                 end
-%                 title(zoneuse.label{zonelist(izone)})
-%             end
-%             
-%             pathout = job.I_chcorrlistoutpath;
-%             if ~isdir(pathout)
-%                 mkdir(pathout);
-%             end
-%             saveas(hplot,  [pathout,filloutput,sprintf('03.0f', f),'FFTPLOT.fig'],'fig')
-%             saveas(hplot,  [pathout,filloutput,sprintf('03.0f', f),'FFTPLOT.jpg'],'jpg')
-%             if job.I_chcorrlist_type.b_crossspectrum.m_savefft_crossspectrum
-%                 save([pathout,filloutput,'ComplexFFT.mat'],'yall','f_fft','listHBOch','listHBRch','ML_new','Bloc')
-%             end
-%             %close(hplot)
-%             figure
-%             subplot(2,1,1)
-%             plot(f_fft(3:end),abs(yall(3:end,listHBO(i),:)*1000  .* conj(yall(3:end,listHBO(25),:)))*1000.^2)
-%             subplot(2,1,2);hold on;plot(d1(listHBO(i),:),'r');plot(d1(listHBO(j),:),'b')
-%             for i=1:numel(listHBO)
-%                 if listHBO(i)
-%                     j = 1;
-%                     in1 =  nanmean(yall(startF:stopF,listHBO(i),:),1)*1000;
-%                     while j<i
-%                         if listHBO(j)
-%                             in2 = nanmean(yall(startF:stopF ,listHBO(j),:),1)*1000;
-%                             if 0
-%                                 figure;subplot(2,2,1);hold on; plot(real(in1),imag(in1),'xr'), plot(real(in2),imag(in2),'xb')
-%                                 xlim([-1,1])
-%                                 ylim([-1,1])
-%                                 subplot(2,2,2);hold on
-%                                 plot(d1(listHBO(i),:),'r')
-%                                 plot(d1(listHBO(j),:),'b')
-%                             end
-%                             
-%                             COVC1C2  = nansum(in1.*conj(in2),3);
-%                             COVC1 =nansum(in1.*conj(in1),3);
-%                             COVC2 =nansum(in2.*conj(in2),3);
-%                             matcorr(i,j,:) = abs(COVC1C2).^2 % ./ (COVC1.*COVC2);
-%                             matcorr(j,i,:) = abs(COVC1C2).^2  %./ (COVC1.*COVC2);
-%                             id = id+1;
-%                             if 0% listHBO(i) ==3
-%                                 figure;
-%                                 subplot(2,2,1)
-%                                 plot(squeeze(nanmean(yall(startF:stopF ,listHBO(i),:),1)),'x');
-%                                 vallim = max([real(squeeze(nanmean(yall(startF:stopF ,listHBO(i),:),1)));imag(squeeze(nanmean(yall(startF:stopF ,listHBO(i),:),1)))]);
-%                                 xlim([- vallim,  vallim])
-%                                 ylim([- vallim,  vallim])
-%                                 title(['CH',num2str(listHBO(i))])
-%                                 subplot(2,2,2)
-%                                 plot(squeeze(nanmean(yall(startF:stopF ,listHBO(j),:),1)),'x');
-%                                 xlim([- vallim,  vallim])
-%                                 ylim([- vallim,  vallim])
-%                                 
-%                                 title(['CH',num2str(listHBO(j))])
-%                                 subplot(2,2,3);hold on
-%                                 plot(squeeze(in1.*conj(in2)),'x')
-%                                 vallim = max([real(squeeze(in1.*conj(in2)));imag(squeeze(in1.*conj(in2)))])
-%                                 xlim([- vallim,  vallim])
-%                                 ylim([- vallim,  vallim])
-%                                 subplot(2,2,4)
-%                                 plot([0,real(COVC1C2)./ (COVC1.*COVC2)], [0, imag(COVC1C2)./ (COVC1.*COVC2)])
-%                                 val = abs(COVC1C2).^2 ./ (COVC1.*COVC2)
-%                                 title([ num2str(val)])
-%                                 vallim = max(abs([0,real(COVC1C2)./ (COVC1.*COVC2),  imag(COVC1C2)./ (COVC1.*COVC2)]));
-%                                 xlim([- vallim,  vallim])
-%                                 ylim([- vallim,  vallim])
-%                             end
-%                         end
-%                         j = j + 1;
-%                     end
-%                 end
-%             end
-%             subplot(2,2,3);imagesc(abs(matcorr))
-%             caxis([0,1])
-%             for i=1:numel(listHBR)
-%                 if listHBR(i)
-%                     j = 1;
-%                     in1 =  nanmean(yall(startF:stopF,listHBR(i),:),1);
-%                     while j<i %1:numel(listelectrode)
-%                         if listHBR(j)
-%                             in2 = nanmean(yall(startF:stopF ,listHBR(j),:),1);
-%                             COVC1C2  = nansum(in1.*conj(in2),3);
-%                             COVC1 =nansum(in1.*conj(in1),3);
-%                             COVC2 =nansum(in2.*conj(in2),3);
-%                             matcorrHbR(i,j,:) = abs(COVC1C2).^2 ./ (COVC1.*COVC2);
-%                             matcorrHbR(j,i,:) = abs(COVC1C2).^2 ./ (COVC1.*COVC2);
-%                             id = id+1;
-%                         end
-%                         j = j + 1;
-%                     end
-%                 end
-%             end
-%             
+            %        elseif 0 %test fft by bloc....
+            %
+            %             %first fft
+            %             fs = NIRS.Cf.dev.fs;                         % Sample frequency (Hz)
+            %             %             if 0 %Matlab fft
+            %             %                 m = size(d1,2);          % Window length
+            %             %                 n = pow2(nextpow2(m));  % Transform length
+            %             %                 y = fft((d1-1)' ,n);           % DFT
+            %             %                 f_fft = (0:n-1)*(fs/n);     % Frequency range
+            %             %                 yfft(:,:,f) = y;
+            %             %             else % Eduardo FFT
+            %             %                 [y, f_fft]= fft_EEGseries(d1,fs);
+            %             %                 yfft(:,:,f) = y;
+            %             %                 n = numel(f_fft)
+            %             %             end
+            %             %            power = y.*conj(y)/n;   % Power of the DFT
+            %
+            %             tseg = job.I_chcorrlist_type.b_crossspectrum.i_TrialLenght_crossspectrum;
+            %             t = 0:1/fs:tseg;
+            %             Bsize = numel(t);
+            %             n = size(d1',1);
+            %             p =floor(n/Bsize);
+            %             nb_random_sample = job.I_chcorrlist_type.b_crossspectrum.i_RandomSample_crossspectrum;
+            %             indbloc = 1:Bsize:n;
+            %             maxval = n-Bsize;
+            %
+            %             dat = d1; %whole bloc as is already segmented
+            %             [y, f_fft]= fft_EEGseries(d1,fs);
+            %             % yall = zeros(size(y,1),size(y,2));
+            %
+            %             %             removetrial = [];
+            %             %             for ibloc = 1:size(Bloc,1)
+            %             %                 dat = d1(:,Bloc(ibloc,1):Bloc(ibloc,2));
+            %             %                 dat=dat - mean(dat,2)*ones(1,Bsize+1) ;
+            %             %                 if sum(isnan(dat(:)))
+            %             %                     removetrial = [removetrial,ibloc];
+            %             %                 else
+            %             %                     [y, f_fft]= fft_EEGseries(dat,fs);
+            %             %                     yall(:,:,ibloc)=y;
+            %             %                 end
+            %             %             end
+            %             %             if ~isempty(removetrial)
+            %             %                 yall(:,:,removetrial)=[];
+            %             %                 totaltrialgood = size(yall,3);
+            %             %             else
+            %             %                 totaltrialgood = size(yall,3);
+            %             %             end
+            %
+            %             yall=y
+            %             power = yall.*conj(yall)/n;
+            %
+            %             matcorr= nan(numel(listname),numel(listname),1);
+            %             matcorrHbR= nan(numel(listname),numel(listname),1);
+            %             freq = job.I_chcorrlist_type.b_crossspectrum.i_Freq_crossspectrum;
+            %             startF =sum(f_fft<=freq(1));
+            %             stopF  =sum(f_fft<=freq(end));
+            %
+            %             %             % Outlier zscore by ch and fr
+            %             %             for ich = 1:size(power,2)%channel
+            %             %                 removetrial = zeros(size(power,3),1);
+            %             %                 for ifr=startF:stopF%freq
+            %             %                     list =find(abs(zscore(power(ifr,ich,:)))>job.I_chcorrlist_type.b_crossspectrum.i_OutlierControl_crossspectrum );
+            %             %                     if ~isempty(list)
+            %             %                         removetrial(list)=1;
+            %             %                     end
+            %             %                 end
+            %             %                 idbad = find(removetrial);
+            %             %                 yall(startF:stopF,ich, idbad)=nan;
+            %             %             end
+            %             %Load zone for display spectrum
+            %             load(job.I_chcorrlist_type.b_crossspectrum.i_ch_crossspectrum{1},'-mat');
+            %             ML_new = ML_new;
+            %             ML_old = zone.ml;
+            %             zoneuse = zone;
+            %             for i = 1:numel(zone.plotLst)
+            %                 plotLst =  zone.plotLst{i};
+            %                 plotLstnew = [];
+            %                 plotold = zone.plot{i};
+            %                 plotnew = [];
+            %                 for indplot = 1:numel(plotLst)
+            %                     a = plotLst(indplot);
+            %                     lista = ML_old(a,:);
+            %                     newid = find(ML_new(:,1) == lista(1) & ML_new(:,2) == lista(2) & ML_new(:,3) == lista(3) & ML_new(:,4) == lista(4));
+            %                     if ~isempty(newid)
+            %                         plotLstnew=[plotLstnew;newid];
+            %                         plotnew = [plotnew;plotold(indplot,:)];
+            %                     end
+            %                 end
+            %                 zoneuse.plotLst{i} = plotLstnew;
+            %                 zoneuse.plot{i}=plotnew;
+            %             end
+            %             maxval = max(max(nanmean(log10(power(2:end,:,:)),3)))+2;
+            %             minval =  min(min(nanmean(log10(power(2:end,:,:)),3)))-2;
+            %             power = yall.*conj(yall)/n;
+            %
+            %             zonelist = 1:numel(zone.plotLst);
+            %             hplot = figure;
+            %             for izone=1:numel(zonelist)
+            %                 subplot(ceil(sqrt(numel(zone.plotLst))),ceil(sqrt(numel(zone.plotLst))),izone);hold on
+            %                 list =  zoneuse.plotLst{zonelist(izone)};
+            %                 colorlst= jet(numel(list));
+            %                 for i=1:numel(list)
+            %                     sumnan = sum(sum(isnan(power(:,list(i),:)),3),1);
+            %                     if strcmp(NIRS.Cf.dev.n,'ISS')
+            %                         srs = SDPairs2strboxy_ISS(ML_new(list(i),1));
+            %                         det = SDDet2strboxy_ISS(ML_new(list(i),2));
+            %                     else
+            %                         srs = SDPairs2strboxy(ML_new(list(i),1));
+            %                         det = SDDet2strboxy(ML_new(list(i),2));
+            %                     end
+            %                     plot(f_fft,nanmean(log10(power(:,list(i),:)),3),'color',colorlst(i,:),'displayname',[srs,'_',det,' ',num2str(sumnan)]);
+            %                     %ylim([minval,maxval]);
+            %                     plot([f_fft(startF),f_fft(startF)],[minval,maxval],'r')
+            %                     plot([f_fft(stopF),f_fft(stopF)],[minval,maxval],'r')
+            %                 end
+            %                 title(zoneuse.label{zonelist(izone)})
+            %             end
+            %
+            %             pathout = job.I_chcorrlistoutpath;
+            %             if ~isdir(pathout)
+            %                 mkdir(pathout);
+            %             end
+            %             saveas(hplot,  [pathout,filloutput,sprintf('03.0f', f),'FFTPLOT.fig'],'fig')
+            %             saveas(hplot,  [pathout,filloutput,sprintf('03.0f', f),'FFTPLOT.jpg'],'jpg')
+            %             if job.I_chcorrlist_type.b_crossspectrum.m_savefft_crossspectrum
+            %                 save([pathout,filloutput,'ComplexFFT.mat'],'yall','f_fft','listHBOch','listHBRch','ML_new','Bloc')
+            %             end
+            %             %close(hplot)
+            %             figure
+            %             subplot(2,1,1)
+            %             plot(f_fft(3:end),abs(yall(3:end,listHBO(i),:)*1000  .* conj(yall(3:end,listHBO(25),:)))*1000.^2)
+            %             subplot(2,1,2);hold on;plot(d1(listHBO(i),:),'r');plot(d1(listHBO(j),:),'b')
+            %             for i=1:numel(listHBO)
+            %                 if listHBO(i)
+            %                     j = 1;
+            %                     in1 =  nanmean(yall(startF:stopF,listHBO(i),:),1)*1000;
+            %                     while j<i
+            %                         if listHBO(j)
+            %                             in2 = nanmean(yall(startF:stopF ,listHBO(j),:),1)*1000;
+            %                             if 0
+            %                                 figure;subplot(2,2,1);hold on; plot(real(in1),imag(in1),'xr'), plot(real(in2),imag(in2),'xb')
+            %                                 xlim([-1,1])
+            %                                 ylim([-1,1])
+            %                                 subplot(2,2,2);hold on
+            %                                 plot(d1(listHBO(i),:),'r')
+            %                                 plot(d1(listHBO(j),:),'b')
+            %                             end
+            %
+            %                             COVC1C2  = nansum(in1.*conj(in2),3);
+            %                             COVC1 =nansum(in1.*conj(in1),3);
+            %                             COVC2 =nansum(in2.*conj(in2),3);
+            %                             matcorr(i,j,:) = abs(COVC1C2).^2 % ./ (COVC1.*COVC2);
+            %                             matcorr(j,i,:) = abs(COVC1C2).^2  %./ (COVC1.*COVC2);
+            %                             id = id+1;
+            %                             if 0% listHBO(i) ==3
+            %                                 figure;
+            %                                 subplot(2,2,1)
+            %                                 plot(squeeze(nanmean(yall(startF:stopF ,listHBO(i),:),1)),'x');
+            %                                 vallim = max([real(squeeze(nanmean(yall(startF:stopF ,listHBO(i),:),1)));imag(squeeze(nanmean(yall(startF:stopF ,listHBO(i),:),1)))]);
+            %                                 xlim([- vallim,  vallim])
+            %                                 ylim([- vallim,  vallim])
+            %                                 title(['CH',num2str(listHBO(i))])
+            %                                 subplot(2,2,2)
+            %                                 plot(squeeze(nanmean(yall(startF:stopF ,listHBO(j),:),1)),'x');
+            %                                 xlim([- vallim,  vallim])
+            %                                 ylim([- vallim,  vallim])
+            %
+            %                                 title(['CH',num2str(listHBO(j))])
+            %                                 subplot(2,2,3);hold on
+            %                                 plot(squeeze(in1.*conj(in2)),'x')
+            %                                 vallim = max([real(squeeze(in1.*conj(in2)));imag(squeeze(in1.*conj(in2)))])
+            %                                 xlim([- vallim,  vallim])
+            %                                 ylim([- vallim,  vallim])
+            %                                 subplot(2,2,4)
+            %                                 plot([0,real(COVC1C2)./ (COVC1.*COVC2)], [0, imag(COVC1C2)./ (COVC1.*COVC2)])
+            %                                 val = abs(COVC1C2).^2 ./ (COVC1.*COVC2)
+            %                                 title([ num2str(val)])
+            %                                 vallim = max(abs([0,real(COVC1C2)./ (COVC1.*COVC2),  imag(COVC1C2)./ (COVC1.*COVC2)]));
+            %                                 xlim([- vallim,  vallim])
+            %                                 ylim([- vallim,  vallim])
+            %                             end
+            %                         end
+            %                         j = j + 1;
+            %                     end
+            %                 end
+            %             end
+            %             subplot(2,2,3);imagesc(abs(matcorr))
+            %             caxis([0,1])
+            %             for i=1:numel(listHBR)
+            %                 if listHBR(i)
+            %                     j = 1;
+            %                     in1 =  nanmean(yall(startF:stopF,listHBR(i),:),1);
+            %                     while j<i %1:numel(listelectrode)
+            %                         if listHBR(j)
+            %                             in2 = nanmean(yall(startF:stopF ,listHBR(j),:),1);
+            %                             COVC1C2  = nansum(in1.*conj(in2),3);
+            %                             COVC1 =nansum(in1.*conj(in1),3);
+            %                             COVC2 =nansum(in2.*conj(in2),3);
+            %                             matcorrHbR(i,j,:) = abs(COVC1C2).^2 ./ (COVC1.*COVC2);
+            %                             matcorrHbR(j,i,:) = abs(COVC1C2).^2 ./ (COVC1.*COVC2);
+            %                             id = id+1;
+            %                         end
+            %                         j = j + 1;
+            %                     end
+            %                 end
+            %             end
+            %
             
         elseif isfield(job.I_chcorrlist_type, 'b_waveletcluster')
             nmax = size(d1,2);
@@ -1243,9 +1528,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
         zone.chMAT = plotLst;
         save(fullfile(pathout,['avg',filezone,'.zone']),'zone','-mat')
         meancorr=nanmean(matcorr,3);
-        meancorrHbR=nanmean(matcorrHbR,3);  
+        meancorrHbR=nanmean(matcorrHbR,3);
     elseif isfield(job.b_nodelist,'I_chcorrlist')       %Channel list
-        ZoneList  = listname;   
+        ZoneList  = listname;
         %add nan on row with rejected channel
         idbad = find( idokHBO==0);
         matcorr(idbad,:,:) = nan;
@@ -1254,7 +1539,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
         idbad = find(idokHBR==0);
         matcorrHbR(idbad,:,:) = nan;
         matcorrHbR(:,idbad,:) = nan;
-        meancorrHbR=nanmean(matcorrHbR,3);    
+        meancorrHbR=nanmean(matcorrHbR,3);
     end
     
     if isfield(job.I_chcorrlist_type,'b_Pearson')
@@ -1262,10 +1547,17 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
             meancorr =  1/2*(log((1+nanmean(meancorr,3))./(1-nanmean(meancorr,3))));
             meancorrHbR =  1/2*(log((1+nanmean(meancorrHbR,3))./(1-nanmean(meancorrHbR,3))));
         end
-        
         save(fullfile(pathout,[filloutput,'_HBO','_Pearson','.mat']),'ZoneList','matcorr','meancorr');
         matcorr = matcorrHbR; meancorr = meancorrHbR;
         save(fullfile(pathout,[filloutput,'_HBR','_Pearson','.mat']),'ZoneList','matcorr','meancorr');
+    elseif isfield(job.I_chcorrlist_type,'b_PearsonPartcorr')
+        if 0 % job.I_chcorrlist_type.b_Pearson.m_Pearson == 2 %fisher transform on the data
+            meancorr =  1/2*(log((1+nanmean(meancorr,3))./(1-nanmean(meancorr,3))));
+            meancorrHbR =  1/2*(log((1+nanmean(meancorrHbR,3))./(1-nanmean(meancorrHbR,3))));
+        end
+        save(fullfile(pathout,[filloutput,'_HBO','_PearsonPartcorr','.mat']),'ZoneList','matcorr','meancorr');
+        matcorr = matcorrHbR; meancorr = meancorrHbR;
+        save(fullfile(pathout,[filloutput,'_HBR','_PearsonPartcorr','.mat']),'ZoneList','matcorr','meancorr');
     elseif isfield(job.I_chcorrlist_type,'b_Hilbert')
         save(fullfile(pathout,[filloutput,'_HBO','_Hilbert','.mat']),'ZoneList','matcorr','meancorr');
         matcorr = matcorrHbR; meancorr = meancorrHbR;
@@ -1294,12 +1586,12 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
         %             meancorr =  1/2*(log((1+nanmean(meancorr,3))./(1-nanmean(meancorr,3))));
         %             meancorrHbR =  1/2*(log((1+nanmean(meancorrHbR,3))./(1-nanmean(meancorrHbR,3))));
         
-
+        
         RecordDevice = NIRS.Cf.dev.n;
         save(fullfile(pathout,[filloutput,'_HBO','_COH FFT','.mat']),'ZoneList','matcorr','meancorr', 'totaltrialgood'  );
         matcorr = matcorrHbR; meancorr = meancorrHbR;
         save(fullfile(pathout,[filloutput,'_HBR','_COH FFT','.mat']),'ZoneList','matcorr','meancorr', 'totaltrialgood' );
-%         save(fullfile(pathout,[filloutput,'peakfft','.mat']), 'tablepeak', '-mat')
+        %         save(fullfile(pathout,[filloutput,'peakfft','.mat']), 'tablepeak', '-mat')
     elseif isfield(job.I_chcorrlist_type, 'b_waveletcluster')
         %CLUSTER MATHIEU  wavelet
         %         Args.ZoneList = ZoneList;
@@ -1679,8 +1971,8 @@ if (nargin < 2) || ischar(varargin{1})
     corrXX = true;
     y = x;
     p2 = p1;
-
-% Both x and y given, compute the pairwise rank cross correlations
+    
+    % Both x and y given, compute the pairwise rank cross correlations
 else
     y = varargin{1};
     varargin = varargin(2:end);
@@ -1704,27 +1996,27 @@ if ischar(rows)
     end
 end
 switch rows
-case 'a' % 'all'
-    % Missing values are left in, so all cols have the same length.
-case 'c' % 'complete'
-    % Complete rows with missing values are removed, so all cols have the
-    % same length.
-    ok = ~any(isnan(x),2);
-    if ~corrXX
-        ok = ok & ~any(isnan(y),2);
-    end
-    n = sum(ok);
-    if n < size(x,1)
-        x = x(ok,:);
+    case 'a' % 'all'
+        % Missing values are left in, so all cols have the same length.
+    case 'c' % 'complete'
+        % Complete rows with missing values are removed, so all cols have the
+        % same length.
+        ok = ~any(isnan(x),2);
         if ~corrXX
-            y = y(ok,:);
+            ok = ok & ~any(isnan(y),2);
         end
-    end
-case 'p' % 'pairwise'
-    % Missing values are removed pairwise, so each column pair may have a
-    % different length, we'll have to see.
-otherwise
-    error(message('stats:corr:UnknownRows'));
+        n = sum(ok);
+        if n < size(x,1)
+            x = x(ok,:);
+            if ~corrXX
+                y = y(ok,:);
+            end
+        end
+    case 'p' % 'pairwise'
+        % Missing values are removed pairwise, so each column pair may have a
+        % different length, we'll have to see.
+    otherwise
+        error(message('stats:corr:UnknownRows'));
 end
 
 % Can't do anything without at least two observations.
@@ -1744,14 +2036,14 @@ if ischar(type)
     end
 end
 switch type
-case 'p' % Pearson linear correlation
-    corrFun = @corrPearson;
-case 'k' % Kendall rank correlation
-    corrFun = @corrKendall;
-case 's' % Spearman rank correlation
-    corrFun = @corrSpearman;
-otherwise
-    error(message('stats:corr:UnknownType'));
+    case 'p' % Pearson linear correlation
+        corrFun = @corrPearson;
+    case 'k' % Kendall rank correlation
+        corrFun = @corrKendall;
+    case 's' % Spearman rank correlation
+        corrFun = @corrSpearman;
+    otherwise
+        error(message('stats:corr:UnknownType'));
 end
 
 % Validate the tail parameter.
@@ -1873,8 +2165,8 @@ if pairwise
     
     n = nij;
     
-% Computation of linear correlation, all elements at once.  NaNs not removed,
-% or have already been removed in complete rows.
+    % Computation of linear correlation, all elements at once.  NaNs not removed,
+    % or have already been removed in complete rows.
 else
     x = bsxfun(@minus,x,sum(x,1)/n);  % Remove mean
     if corrXX
@@ -1978,9 +2270,9 @@ if nargout > 1
     pval = zeros(p1,p2,outClass);
     Kstat = zeros(p1,p2,outClass); % save the obs. stat. for p-value computation
     if corrXX
-         needPVal = tril(true(p1),-1); % lower triangle only, no diagonal
+        needPVal = tril(true(p1),-1); % lower triangle only, no diagonal
     else
-         needPVal = true(p1,p2);
+        needPVal = true(p1,p2);
     end
 end
 
@@ -2051,9 +2343,9 @@ for i = 1:p1
                     stdK = 0;
                 else
                     stdK = sqrt(n2const*(2*nij+5)./9 ...
-                            + xadji(1)*yadjj(1)./n2const ...
-                            + xadji(2)*yadjj(2)./(18*n2const*(nij-2)) ...
-                            - (xadji(3) + yadjj(3))./18);
+                        + xadji(1)*yadjj(1)./n2const ...
+                        + xadji(2)*yadjj(2)./(18*n2const*(nij-2)) ...
+                        - (xadji(3) + yadjj(3))./18);
                 end
                 pval(i,j) = pvalKendall(tail, K, stdK, xranki, yrankj);
                 needPVal(i,j) = false; % this one's done
@@ -2131,9 +2423,9 @@ if pairwise
         pval = zeros(p1,p2,outClass);
         Dstat = zeros(p1,p2,outClass); % save the obs. stat. for p-value computation
         if corrXX
-             needPVal = tril(true(p1),-1); % lower triangle only, no diagonal
+            needPVal = tril(true(p1),-1); % lower triangle only, no diagonal
         else
-             needPVal = true(p1,p2);
+            needPVal = true(p1,p2);
         end
     end
     
@@ -2154,7 +2446,7 @@ if pairwise
             end
             n3const = (nij+1)*nij*(nij-1) ./ 3;
             ties = ((xadj>0) || (yadj>0));
-
+            
             D = sum((xranki - yrankj).^2);
             meanD = (n3const - (xadj+yadj)./3) ./ 2;
             
@@ -2171,7 +2463,7 @@ if pairwise
             if (i == j) && corrXX
                 % Put an exact one on the diagonal for autocorrelation.
                 coef(i,i) = sign(coef(i,i)); % preserves NaNs
-            
+                
                 % Compute on-diag p-values for autocorrelation later
                 
             elseif nargout > 1
@@ -2188,7 +2480,7 @@ if pairwise
     end
     % Limit off-diag correlations to [-1,1].
     t = find(abs(coef) > 1); coef(t) = coef(t)./abs(coef(t)); % preserves NaNs
-
+    
     % Calculate the remaining p-values, except not the on-diag elements for
     % autocorrelation.  All cases with no ties and no removed missing values
     % can be computed based on a single null distribution.
@@ -2198,7 +2490,7 @@ if pairwise
         stdD = n3const ./ (2*sqrt(n-1));
         pval(needPVal) = pvalSpearman(tail,Dstat(needPVal),meanD,stdD,n);
     end
-
+    
     % If this is autocorrelation, reflect the lower triangle into the upper.
     if corrXX
         coef = tril(coef) + tril(coef,-1)'; % leave the diagonal alone
@@ -2210,9 +2502,9 @@ if pairwise
             pval(1:p1+1:end) = sign(diag(coef)); % preserves NaNs on diag
         end
     end
-            
-% Vectorized computation of rank correlation.  No NaN removal, or NaNs already
-% removed in complete rows
+    
+    % Vectorized computation of rank correlation.  No NaN removal, or NaNs already
+    % removed in complete rows
 else
     [xrank, xadj] = tiedrank(x,0);
     ties = any(xadj>0);
@@ -2251,8 +2543,8 @@ else
                 pval = pvalSpearman(tail,D,meanD,stdD,n);
             end
         end
-    
-    % Compute one row at a time when we need p-values and there are ties
+        
+        % Compute one row at a time when we need p-values and there are ties
     else
         coef = zeros(p1,p2,outClass);
         pval = zeros(p1,p2,outClass);
@@ -2279,7 +2571,7 @@ else
             coef(i,j) = (meanD - D) ./ (sqrt(n-1)*stdD);
             pval(i,j) = pvalSpearman(tail,D,meanD,stdD,xranki,yrankj);
         end
-
+        
         % Limit off-diag correlations to [-1,1].
         t = find(abs(coef) > 1); coef(t) = coef(t)./abs(coef(t)); % preserves NaNs
         
@@ -2302,12 +2594,12 @@ function p = pvalPearson(tail, rho, n)
 %PVALPEARSON Tail probability for Pearson's linear correlation.
 t = rho.*sqrt((n-2)./(1-rho.^2)); % +/- Inf where rho == 1
 switch tail
-case 'b' % 'both or 'ne'
-    p = 2*tcdf(-abs(t),n-2);
-case 'r' % 'right' or 'gt'
-    p = tcdf(-t,n-2);
-case 'l' % 'left' or 'lt'
-    p = tcdf(t,n-2);
+    case 'b' % 'both or 'ne'
+        p = 2*tcdf(-abs(t),n-2);
+    case 'r' % 'right' or 'gt'
+        p = tcdf(-t,n-2);
+    case 'l' % 'left' or 'lt'
+        p = tcdf(t,n-2);
 end
 end
 
@@ -2356,7 +2648,7 @@ if exact
             freq = conv(freq,ones(1,i));
         end
         freq = [freq; zeros(1,n2const+1)]; freq = freq(1:end-1)';
-
+        
     else
         % Ties, take permutations of the midranks.
         %
@@ -2374,33 +2666,33 @@ if exact
         end
         freq = histc(Kperm,-(n2const+.5):(n2const+.5)); freq = freq(1:end-1);
     end
-
+    
     % Get the tail probabilities.  Reflect as necessary to get the correct
     % tail.
     switch tail
-    case 'b' % 'both or 'ne'
-        % Use twice the smaller of the tail area above and below the
-        % observed value.
-        tailProb = min(cumsum(freq), rcumsum(freq,nfact)) ./ nfact;
-        tailProb = min(2*tailProb, 1); % don't count the center bin twice
-    case 'r' % 'right' or 'gt'
-        tailProb = rcumsum(freq,nfact) ./ nfact;
-    case 'l' % 'left' or 'lt'
-        tailProb = cumsum(freq) ./ nfact;
+        case 'b' % 'both or 'ne'
+            % Use twice the smaller of the tail area above and below the
+            % observed value.
+            tailProb = min(cumsum(freq), rcumsum(freq,nfact)) ./ nfact;
+            tailProb = min(2*tailProb, 1); % don't count the center bin twice
+        case 'r' % 'right' or 'gt'
+            tailProb = rcumsum(freq,nfact) ./ nfact;
+        case 'l' % 'left' or 'lt'
+            tailProb = cumsum(freq) ./ nfact;
     end
     p = NaN(size(K),class(K));
     t = ~isnan(K(:));
     p(t) = tailProb(K(t) + n2const+1); % bins at integers, starting at -n2const
-
+    
 else
     switch tail
-    case 'b' % 'both or 'ne'
-        p = normcdf(-(abs(K)-1) ./ stdK);
-        p = 2*p; p(p>1) = 1; % Don't count continuity correction at center twice
-    case 'r' % 'right' or 'gt'
-        p = normcdf(-(K-1) ./ stdK);
-    case 'l' % 'left' or 'lt'
-        p = normcdf((K+1) ./ stdK);
+        case 'b' % 'both or 'ne'
+            p = normcdf(-(abs(K)-1) ./ stdK);
+            p = 2*p; p(p>1) = 1; % Don't count continuity correction at center twice
+        case 'r' % 'right' or 'gt'
+            p = normcdf(-(K-1) ./ stdK);
+        case 'l' % 'left' or 'lt'
+            p = normcdf((K+1) ./ stdK);
     end
 end
 end
@@ -2450,19 +2742,19 @@ if exact
             end
         end
     end
-        
+    
 else
     if noties
         % Use AS89, an Edgeworth expansion for upper tail prob of D.
         n3const = (n^3 - n)/3;
         switch tail
-        case 'b' % 'both or 'ne'
-            p = AS89(max(D, n3const-D), n, n3const);
-            p = 2*p; p(p>1) = 1; % Don't count continuity correction at center twice
-        case 'r' % 'right' or 'gt'
-            p = AS89(n3const - D, n, n3const);
-        case 'l' % 'left' or 'lt'
-            p = AS89(D, n, n3const);
+            case 'b' % 'both or 'ne'
+                p = AS89(max(D, n3const-D), n, n3const);
+                p = 2*p; p(p>1) = 1; % Don't count continuity correction at center twice
+            case 'r' % 'right' or 'gt'
+                p = AS89(n3const - D, n, n3const);
+            case 'l' % 'left' or 'lt'
+                p = AS89(D, n, n3const);
         end
     else
         % Use a t approximation.
@@ -2471,12 +2763,12 @@ else
         ok = (abs(r) < 1);
         t(ok) = r(ok) .* sqrt((n-2)./(1-r(ok).^2));
         switch tail
-        case 'b' % 'both or 'ne'
-            p = 2*tcdf(-abs(t),n-2);
-        case 'r' % 'right' or 'gt'
-            p = tcdf(-t,n-2);
-        case 'l' % 'left' or 'lt'
-            p = tcdf(t,n-2);
+            case 'b' % 'both or 'ne'
+                p = 2*tcdf(-abs(t),n-2);
+            case 'r' % 'right' or 'gt'
+                p = tcdf(-t,n-2);
+            case 'l' % 'left' or 'lt'
+                p = tcdf(t,n-2);
         end
     end
 end
@@ -2509,15 +2801,15 @@ freq = histc(Dperm,(-.25):.5:(n3const+.25)); freq = freq(1:end-1);
 % Get the tail probabilities.  Reflect as necessary to get the correct
 % tail: the left tail of D corresponds to right tail of rho.
 switch tail
-case 'b' % 'both or 'ne'
-    % Use twice the smaller of the tail area above and below the
-    % observed value.
-    tailProb = min(cumsum(freq), rcumsum(freq,nfact)) ./ nfact;
-    tailProb = min(2*tailProb, 1); % don't count the center bin twice
-case 'r' % 'right' or 'gt'
-    tailProb = cumsum(freq) ./ nfact;
-case 'l' % 'left' or 'lt'
-    tailProb = rcumsum(freq,nfact) ./ nfact;
+    case 'b' % 'both or 'ne'
+        % Use twice the smaller of the tail area above and below the
+        % observed value.
+        tailProb = min(cumsum(freq), rcumsum(freq,nfact)) ./ nfact;
+        tailProb = min(2*tailProb, 1); % don't count the center bin twice
+    case 'r' % 'right' or 'gt'
+        tailProb = cumsum(freq) ./ nfact;
+    case 'l' % 'left' or 'lt'
+        tailProb = rcumsum(freq,nfact) ./ nfact;
 end
 end
 
