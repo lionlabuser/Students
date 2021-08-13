@@ -1,4 +1,4 @@
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\Perm_results N=54\';
+savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\PhysioRegressed_SatRespEKG\PartialCorr\Perm_results N=54\';
 
 %%Pour matrices%%%
 A = gcf;
@@ -15,7 +15,7 @@ xticklabels(modlabels);
 yticklabels(modlabels);
 ax = gca;
 titre = ax.Title.String;
-ax.FontSize = 12;
+ax.FontSize = 14;
 titremod = titre(34:end-4);
 % grid minor
 % ax.Layer = 'top';
@@ -31,8 +31,8 @@ A = gcf;
 ax = gca;
 ax.XAxis.Color = 'none';
 ax.YAxis.Color = 'none';
-exportgraphics(A,[savepath 'PosConnectG2-G1p0.05.png'])
-savefig(A,[savepath 'PosConnectG2-G1p0.05.fig'])
+exportgraphics(A,[savepath 'PosConnectG1-G2p0.05.png'])
+savefig(A,[savepath 'PosConnectG1-G2p0.05.fig'])
 clearvars -except savepath
 close gcf
 
@@ -41,7 +41,7 @@ A = gcf;
 ax = gca;
 ax.XAxis.Color = 'none';
 ax.YAxis.Color = 'none';
-exportgraphics(A,[savepath 'NegConnectG2-G1p0.05.png'])
-savefig(A,[savepath 'NegConnectG2-G1p0.05.fig'])
+exportgraphics(A,[savepath 'NegConnectG1-G2p0.05.png'])
+savefig(A,[savepath 'NegConnectG1-G2p0.05.fig'])
 clearvars -except savepath
 close gcf
