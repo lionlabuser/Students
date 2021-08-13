@@ -3102,7 +3102,35 @@ b_Pearson.name   = 'Cross-correlation analysis';
 b_Pearson.val    = {c_Pearson};
 b_Pearson.help   = {'Compute zeros lag cross-correlation between channels or region of interest.'};                  
 
+%modif KR
+b_PearsonPartcorrBootstrap         = cfg_branch;
+b_PearsonPartcorrBootstrap.tag     = 'b_PearsonPartcorrBootstrap';
+b_PearsonPartcorrBootstrap.name    = 'Circular bootstrap';
+b_PearsonPartcorrBootstrap.val     = {i_TrialLenght_crossspectrum,i_RandomSample_crossspectrum,i_OutlierControl_crossspectrum};
+b_PearsonPartcorrBootstrap.help    = {'Use circular bootstrap to compute Partial Correlation analysis.'};
+                
+m_PearsonPartcorr           = cfg_menu;
+m_PearsonPartcorr.tag       = 'm_PearsonPartcorr';
+m_PearsonPartcorr.name      = 'Segments';
+m_PearsonPartcorr.labels    = {'Partial Correlation'};
+m_PearsonPartcorr.values    = {1};
+m_PearsonPartcorr.val       = {1};
+m_PearsonPartcorr.help      = {'Apply the Partial Correlation on each segmented file of the data set.'};
 
+
+c_PearsonPartcorr          = cfg_choice;
+c_PearsonPartcorr.tag     = 'c_PearsonPartcorr';
+c_PearsonPartcorr.name    = 'Option';
+c_PearsonPartcorr.values  = {m_PearsonPartcorr,b_PearsonPartcorrBootstrap};
+c_PearsonPartcorr.val     = {b_PearsonPartcorrBootstrap}; %Default option
+c_PearsonPartcorr.help    = {''};
+
+b_PearsonPartcorr       = cfg_branch;
+b_PearsonPartcorr.tag    = 'b_PearsonPartcorr';
+b_PearsonPartcorr.name   = 'Partial Correlation analysis';
+b_PearsonPartcorr.val    = {c_PearsonPartcorr};
+b_PearsonPartcorr.help   = {'Compute Partial Correlation between channels or region of interest.'};       
+% fin modif KR
 
 m_Hilbert           = cfg_menu;
 m_Hilbert.tag       = 'm_Hilbert';
@@ -3174,7 +3202,7 @@ I_chcorrlist_type.tag     = 'I_chcorrlist_type';
 I_chcorrlist_type.name    = 'Connectivity to use';
 I_chcorrlist_type.val     = {b_crossspectrum};
 I_chcorrlist_type.help    = {''};
-I_chcorrlist_type.values  = {b_Pearson, b_Hilbert,b_crossspectrum};%,b_Granger,b_Phase,b_waveletcluster};%,b_Hilbert,b_Granger, b_Phase, b_crossspectrum
+I_chcorrlist_type.values  = {b_Pearson, b_PearsonPartcorr, b_Hilbert,b_crossspectrum};%,b_Granger,b_Phase,b_waveletcluster};%,b_Hilbert,b_Granger, b_Phase, b_crossspectrum
 % 
 % I_chcorrlist_type.labels = {'Pearson', 'Pearson with zscore','Hilbert phase joint probability', 'Granger','Phase ISS','Analyzer Correlation/Autocorrelation'};
 % I_chcorrlist_type.values = {1 2 3 4 5 6};
@@ -3186,7 +3214,7 @@ I_chcorrlistoutpath.name    = 'Path connectivity matrix';
 I_chcorrlistoutpath.tag     = 'I_chcorrlistoutpath';       
 I_chcorrlistoutpath.strtype = 's';
 I_chcorrlistoutpath.num     = [1 Inf];     
-I_chcorrlistoutpath.val     = {'C:\data\Data_NIRS\BebeResting\connectivityMAT\'}; 
+I_chcorrlistoutpath.val     = {}; 
 I_chcorrlistoutpath.help    = {['Path for output files.']}; 
 
 
