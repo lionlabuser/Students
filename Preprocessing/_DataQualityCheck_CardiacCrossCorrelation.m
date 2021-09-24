@@ -27,6 +27,11 @@ NC=108; %number of channels
 threshold=.75; %correlation threshold (here = same as Pollonini 2014)
 CHANGE=1; %overwrite nirs.mat file for bad channels
 
+lengthch=repmat(2,[54,1]);
+lengthch([10 43])=3.5;
+lengthch([11 52])=3.6;
+lengthch([9 44 15 39])=3.8;
+lengthch([19 36 25 26 29 30])=2.7;
 %% Beginning of automatic script
 if ~strcmp(folder(end), filesep)
     folder=[folder filesep];
@@ -68,18 +73,23 @@ save([folder participant '_WVcorrcoef.mat'],'R','R2')
 %if targetfolder is not specified (if the variable does not exist)
 % = automatically uses the folder in which the Cardiac subfolder is in
 if CHANGE ==1
-    if ~exist('targetNIRS','var')
-        tmp=split(folder,filesep);
-        targetNIRS=[fullfile(tmp{1:end-2}) filesep];
-        clear tmp
-    end
-    load([targetNIRS 'NIRS.mat'],'NIRS');
-    if size([R2;R2]) == size(NIRS.Cf.H.C.ok)
-        NIRS.Cf.H.C.ok([R2;R2]) =0 ;
-    else
-        error('Size of coefficient matrice does not match size of badchannel identification in NIRS.mat file')
-    end
-    save([targetNIRS 'NIRS.mat'],'NIRS');
+if ~exist('targetNIRS','var')
+    tmp=split(folder,filesep);
+    targetNIRS=[fullfile(tmp{1:end-2}) filesep];
+    clear tmp
+end
+
+NIRS=[];
+load([targetNIRS 'NIRS.mat']);
+if size([R2;R2]) == size(NIRS.Cf.H.C.ok)
+    NIRS.Cf.H.C.ok([R2;R2]) =0 ;
+else
+    error('Size of coefficient matrice does not match size of badchannel identification in NIRS.mat file')
+end
+
+NIRS.Cf.H.C.gp=repmat(lengthch,[2 1]); %save channel distance for future HB conversion
+
+save([targetNIRS 'NIRS.mat'],'NIRS');
 end
 
 %% create a summary text file
