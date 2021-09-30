@@ -213,7 +213,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                             if listHBO(j)
                                 d1ok = d1(listHBO(i,1),:);
                                 d2ok = d1(listHBO(j,1),:);
-                                matcorr(i,j,f)=corr(d1ok',d2ok','Rows','pairwise'); %Modif KR
+                                matcorr(i,j,f)= corr(d1ok',d2ok','Rows','pairwise'); %Modif KR
                                 matcorr(j,i,f)= matcorr(i,j,f);
                             end
                             j = j + 1;
@@ -228,7 +228,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                             if  listHBO(j)
                                 d1ok = d1(listHBR(i,1),:);
                                 d2ok = d1(listHBR(j,1),:);
-                                matcorrHbR(i,j,f)=corr(d1ok',d2ok','Rows','pairwise'); %Modif KR
+                                matcorrHbR(i,j,f)= corr(d1ok',d2ok','Rows','pairwise'); %Modif KR
                                 matcorrHbR(j,i,f)= matcorrHbR(i,j,f);
                             end
                             j = j + 1;
@@ -301,8 +301,8 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 if listHBO(j)
                                     d1ok = dat(listHBO(i,1),:);
                                     d2ok = dat(listHBO(j,1),:);
-                                    matcorr(i,j,ibloc)=corr(d1ok',d2ok','Rows','pairwise');  %Modif KR
-                                    matcorr(j,i,ibloc)= matcorr(i,j,ibloc);
+                                    matcorr(i,j,ibloc) = corr(d1ok',d2ok','Rows','pairwise');  %Modif KR
+                                    matcorr(j,i,ibloc) = matcorr(i,j,ibloc);
                                 end
                                 j = j + 1;
                             end
@@ -316,7 +316,7 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 if  listHBO(j)
                                     d1ok = dat(listHBR(i,1),:);
                                     d2ok = dat(listHBR(j,1),:);
-                                    matcorrHbR(i,j,ibloc)=corr(d1ok',d2ok','Rows','pairwise');  %Modif KR
+                                    matcorrHbR(i,j,ibloc)= corr(d1ok',d2ok','Rows','pairwise');  %Modif KR
                                     matcorrHbR(j,i,ibloc)= matcorrHbR(i,j,ibloc);
                                 end
                                 j = j + 1;
@@ -462,9 +462,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 while j<i
                                     if listHBO(j)
                                         if idokHBO(j+l) == 1
-                                            corr = matcorr(i,j,ibloc); %extract its connectivity
-                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corrij;
                                         elseif idokHBO(j+l) == 0
                                             for l = l:(numel(listHBO))
                                                 if idokHBO(j+l) == 0
@@ -473,9 +473,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                                     break
                                                 end
                                             end
-                                            corr = matcorr(i,j,ibloc); %extract its connectivity
-                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corrij;
                                         end
                                     end
                                     j = j + 1; 
@@ -492,9 +492,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 while j<i
                                     if listHBO(j) 
                                         if idokHBO(j+l) == 1
-                                            corr = matcorr(i,j,ibloc); %extract its connectivity
-                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corrij;
                                         elseif idokHBO(j+l) == 0
                                             for l = l:(numel(listHBO))
                                                 if idokHBO(j+l) == 0
@@ -503,9 +503,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                                     break
                                                 end
                                             end
-                                            corr = matcorr(i,j,ibloc); %extract its connectivity
-                                            nanmatcorr((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorr((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorr(i,j,ibloc); %extract its connectivity
+                                            nanmatcorr((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorr((j+l),(i+k),ibloc) = corrij;
                                         end
                                     end
                                     j = j + 1; 
@@ -528,9 +528,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 while j<i
                                     if listHBR(j)
                                         if idokHBR(j+l) == 1
-                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
-                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corrij;
                                         elseif idokHBR(j+l) == 0
                                             for l = l:(numel(listHBR))
                                                 if idokHBR(j+l) == 0
@@ -539,9 +539,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                                     break
                                                 end
                                             end
-                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
-                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corrij;
                                         end
                                     end
                                     j = j + 1; 
@@ -558,9 +558,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                 while j<i
                                     if listHBR(j) 
                                         if idokHBR(j+l) == 1
-                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
-                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corrij;
                                         elseif idokHBR(j+l) == 0
                                             for l = l:(numel(listHBR))
                                                 if idokHBR(j+l) == 0
@@ -569,9 +569,9 @@ for filenb=1:size(job.NIRSmat,1) %do it one by one for the associate name
                                                     break
                                                 end
                                             end
-                                            corr = matcorrHbR(i,j,ibloc); %extract its connectivity
-                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corr;
-                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corr;
+                                            corrij = matcorrHbR(i,j,ibloc); %extract its connectivity
+                                            nanmatcorrHbR((i+k),(j+l),ibloc) = corrij;
+                                            nanmatcorrHbR((j+l),(i+k),ibloc) = corrij;
                                         end
                                     end
                                     j = j + 1; 
