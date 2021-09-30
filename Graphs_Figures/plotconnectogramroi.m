@@ -111,6 +111,7 @@ idmiddle = zeros(1,numel(idzone));
 idmiddle(tmphald ) = idzone(find(idzone));
 
 % Create custom node labels
+label = strrep(label,'_',' '); %Modif KR
 myLabel = cell(length(x));
 % colorlistline = zeros(size(MAT,1),3);
 %line(numel(listok))
@@ -157,7 +158,8 @@ figure; hold on
 myconnectogram(x,myLabel,xcolorMatrix,colorMap,idlist)
 colormap('jet')
 caxis([cmin cmax])
-colorbar
 ax = gca;
 ax.XAxis.Color = 'None';
 ax.YAxis.Color = 'None';
+ax.OuterPosition = [0.25 0.28 0.5 0.5];
+colorbar('Position',[0.9 0.18 0.0305 0.7])
