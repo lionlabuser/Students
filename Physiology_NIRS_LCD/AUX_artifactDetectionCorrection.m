@@ -1,17 +1,24 @@
+%___________________________________________________________________
+% Copyright (C) 2019 LION Lab, Centre de recherche CHU Sainte-Justine
+% www.lionlab.umontreal.ca
+%___________________________________________________________________
+function out = nirs_run_AUX_artifactDetectionCorrection(job)
+
 clear;close all
-AUXfile='BB066_0m_Mart_AUX.dat';
-AUXpath='C:\Users\laura\AnalysesNIRS\MART0m\Multimodal\';
-AUXpath=[AUXpath AUXfile(1:5)];
-idpart=split(AUXpath,filesep);
-generalmultipath=fullfile(idpart{1:end-1}); %to get the general multimodal folder
-idpart=idpart{end}; %to get participant ID
+AUXname = job.AUXname; %'BB066_0m_Mart_AUX.dat';
+AUXpath = job.AUXpath; %'C:\Users\laura\AnalysesNIRS\MART0m\Multimodal\';
+%AUXpath = [AUXpath AUXname(1:5)]; %'C:\Users\laura\AnalysesNIRS\MART0m\Multimodal\BB066';
+idpart = erase(AUXname, '_Rest_AUX');%split(AUXpath,filesep);
+%idpart = idpart{end}; %to get participant ID %BB066
+multimodpath = AUXpath; %fullfile(idpart{1:end-1}); %to get the general multimodal folder %'C:\Users\laura\AnalysesNIRS\MART0m\'
+
 
 threshold=[.3 .9;... %moving STD threshold, respectively for SAT and RESP, in standardized units(zscore)
     .5   .9];%...  %moving AVG threshold, respectively for SAT and RESP, in standardized units (zscore)
 %    .2 .2 ]; %moving STD DIFFERENCE threshold, respectively for SAT and RESP, in standardized units(zscore)
 
 %open Following AUX correction file
-allupdatefile=[generalmultipath filesep 'ALL_updateAUX_artefactcorrection.mat'];
+allupdatefile=[multimodpath filesep 'corrAUX.mat'];
 if exist(allupdatefile,'file')
     load(allupdatefile,'out')
     outrow=length(out)+1;
@@ -21,7 +28,7 @@ else
 end
 
 %import EEG file
-[data,infoBV,marker,ind_dur_ch] = fopen_EEG([AUXpath filesep AUXfile]);
+[data,infoBV,marker,ind_dur_ch] = fopen_EEG([AUXpath filesep AUXname]);
 
 %find SAT and RESP
 for id=1:length(infoBV.name_ele)
@@ -139,8 +146,8 @@ while any(question1==0)
 end
 fprintf('=========\nOut of first loop: Artifact identification completed.\n=========\n')
 out(outrow).part=idpart;
-out(outrow).originalfile=[AUXpath filesep AUXfile];
-out(outrow).corrfile=[AUXpath filesep 'c' AUXfile];
+out(outrow).originalfile=[AUXpath filesep AUXname];
+out(outrow).corrfile=[AUXpath filesep 'c' AUXname];
 out(outrow).channels=chanlabels;
 out(outrow).mSTD_threshold=threshold(1,:);
 %out(outrow).mdSTD_threshold=threshold(3,:);
@@ -251,7 +258,7 @@ disp(fileoutAUX)
 
 %save update file for following all participants' AUX artifact correction
 save(allupdatefile,'out');
-
+end
 
 %% UPDATE INFO IN NIRS.MAT
 % because some participants have 2 AUX files, it might be better to do this
