@@ -2,7 +2,7 @@
 tic
 disp('Computing GetToKnowYourDATA')
 
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\PartialCorr\';
+datapath = 'C:\data\CINC\CINC4m\test_nov21\';
 load ([datapath 'workspace.mat'])
 %load ([datapath 'workspacemat.mat'])
 
@@ -15,7 +15,7 @@ descrstatsmode = 1;
 graphmode = 1;
 channelmode = 1;
 importROI = 0;
-calculateROI = 1;
+calculateROI = 0;
 
 %%
 %%Stats descriptives%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -857,7 +857,7 @@ if graphmode
             str = sprintf('%s Largest FC difference between G1 and G2');
             title(str)
             savefig([savepath date '_ConnectSDG1G2']);
-            exportgraphics(gcf,[savepath 'ConnectSDG1G2.png'])
+            %exportgraphics(gcf,[savepath 'ConnectSDG1G2.png'])
         else
         end
         
@@ -892,8 +892,9 @@ if graphmode
             ax.FontSize = 12;
             str = sprintf('%s Mean G1-G2',ROIname);
             title(str)
-            
-            
+            str = sprintf('_MatG1G2 %s',ROIname);
+            savefig([savepath date str]);
+            exportgraphics(gcf,[savepath str '.png'])
             clear c cmin cmax clims ax str hG1G2
             
             meandiff = mean(MATroimeanG1G2{:,R},'all','omitnan');
@@ -919,7 +920,10 @@ if graphmode
             ax.FontSize = 12;
             str = sprintf('%s Mean G1-G2 > 2SD',ROIname);
             title(str)
-            
+            str = sprintf('_MatSDG1G2 %s',ROIname);
+            savefig([savepath date str]);
+            exportgraphics(gcf,[savepath str '.png'])
+        
             clear meandiff stddiff tr tf c cmin cmax clims ax str hG1G2int
             
             DATG1G2 = MATvTBL.MAT2TBL(MATG1G2); %transformer la matrice en tableau
@@ -938,12 +942,17 @@ if graphmode
             xlabel('Pair of ROIs')
             str = sprintf('%s Largest FC difference between G1 and G2',ROIname);
             title(str);
-            
+            str = sprintf('_TblSDG1G2 %s',ROIname);
+            savefig([savepath date str]);
+            exportgraphics(gcf,[savepath str '.png'])
+        
             if find(MATG1G2)
             plotLst = roi{:,R}(2,:);
             label =  roi{:,R}(1,:);
             plotconnectogramroi(fileorderconnectogram{:,R},MATG1G2,label,plotLst)
-            %savefig([savepath date '_NegConnectSigG1G2ROI']);
+            str = sprintf('_ConnectSDG1G2 %s',ROIname);
+            savefig([savepath date str]);
+            %exportgraphics(gcf,[savepath str '.png'])
             else
             end 
             

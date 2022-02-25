@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%PREPARING CORR DATA FOR ANALYSIS%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\PartialCorr\';
+savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\CorrPair\';
 if ~isfolder(savepath)
     mkdir(savepath)
 end
@@ -11,8 +11,8 @@ channelmode = 1; %Faire les analyses sur les canaux
 ROImode = 1; %Faire les analyses sur les ROI
 
 connectivity = 'CORR'; %Modify 'COH' OR 'CORR'
-xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\PhysioRegressed_SatRespEKG\PartialCorr\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
-exceltable = 'C:\data\Malnutrition\Resting\NIRS\Participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
+xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\CORRmatrice0,01_0,08\Channels\CorrPair\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
+exceltable = 'C:\data\Malnutrition\Resting\NIRS\participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
 
 %%%%%% from StatMatrices of LIONIRS toolbox%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 disp('Loading the data')
@@ -150,7 +150,7 @@ T.Properties.VariableNames{'SEX_M_0_F_1_'} = 'SEX';
 
 if isequal(connectivity,'CORR') % créer des variables différente pour chaque variable démographique
     A=[];
-    A = erase(list_subject,'_HBO_PearsonPartcorr'); %Ajouter Partcorr si s'applique
+    A = erase(list_subject,'_HBO_Pearson'); %Ajouter Partcorr si s'applique
     part = string(A');
     gr = groupeall;
     for p=1:numel(part)
@@ -169,14 +169,15 @@ if isequal(connectivity,'COH') % créer des variables différente pour chaque va
     for p=1:numel(part)
         tf = strcmp(T.ID,part(p));
         idx = find(tf);
-        age(p,1) = T.AGE(idx);
-        sex(p,1) = T.SEX(idx);
-        ses(p,1) = T.SES(idx);
+        age(p,1) = T.AGE(idx); %AGE
+        sex(p,1) = T.SEX(idx); %SEX
+        ses(p,1) = T.SES(idx); %SES
     end
 end
 
 if importROI == 0 & channelmode == 1
     Listch = 1:size(MATall,1);
+    lgndch = {'Ch';'c'};
 end
 
 if ROImode
@@ -284,7 +285,8 @@ if importROI == 0 & channelmode == 1
             end
         end
     end
-
+    NC = size(MATall,1);
+    NCP = size(datach,2);
     tblch = [table(part, gr, age, sex, ses) array2table([datach],'VariableNames', labelch)]; %créer un tableau avec les données
 
     clear idx tf p c cc x;
