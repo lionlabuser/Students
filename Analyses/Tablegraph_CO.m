@@ -1,4 +1,6 @@
-function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] = Tablegraph_CO(res, pval, labelfactors, p, dat, lgnd, label, MATmeandiff, meanG1, meanG2, DATA, fileorderconnectogram, savepath, graphmode, varargin)
+function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] = ...
+    Tablegraph_CO(res, pval, labelfactors, p, dat, lgnd, label, MATmeandiff, meanG1,...
+    meanG2, DATA, fileorderconnectogram, savepath, graphmode, varargin)
     
     nbfactors = length(labelfactors);
     R = find(contains(lgnd(1,:),dat));
@@ -12,7 +14,10 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
     
     save([savepath date '_' dat 'Results.mat'],'tblres','tblpval','tblpvalsig','tblressig');
     %writetable(tblsigch,[savepath date '_sigresultsch.xls']); trop gros
+try
     writetable(tblpvalsig,[savepath date '_' dat 'PvalSigresults.xls'],'WriteRowNames',true);
+catch
+end
     %writetable(tblgrsigch,[savepath date '_grsigresultsch.xls']);
     
     if find(sig)
@@ -31,7 +36,7 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
 
                 if graphmode == 1
                     %%graphique%%%
-                    figure
+                    fig = figure;
                     A = meanG1(:,sig);
                     B = meanG2(:,sig);
                     C = [A' B'];
@@ -42,8 +47,10 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
                     ylabel('Pearson correlation');
                     str = sprintf('Significant %s effect',fac);
                     title(str)
+                    fig.WindowState = 'maximized';
                     savefig([savepath date '_' dat 'Sig' fac]);
-                    exportgraphics(gcf,[savepath date '_' dat 'Sig' fac '.png'])
+                    exportgraphics(gcf,[savepath dat 'Sig' fac '.png'])
+                    close
 
                     % figure
                     % p1 = bar(meanG1ch(:,grsig),'r');
@@ -61,21 +68,25 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
 
                     MATpval = zeros(length(MATmeandiff));
                     if contains(dat,'Ch')
+                        x = 1;
                        for c = 1:length(MATmeandiff)
-                            for cc =(c + 1):length(MATmeandiff)
-                                x = [num2str(c) '-' num2str(cc)];
-                                tf = strcmp(x, label);
-                                idx = find(tf);
-                                MATpval(c,cc)= pval(f,idx); %Mettre les  p sous forme de matrice
+                            for cc = (c + 1):length(MATmeandiff)
+%                                 x = [num2str(c) '-' num2str(cc)];
+%                                 tf = strcmp(x, label);
+%                                 idx = find(tf);
+                                MATpval(c,cc)= pval(f,x); %Mettre les  p sous forme de matrice
+                                x = x + 1;
                             end
                         end 
                     elseif contains(dat,'roi')
+                        x = 1;
                         for c = 1:length(MATmeandiff)
                             for cc =(c + 1):length(MATmeandiff)
-                                x = [lgnd{2,R} num2str(c) '-' lgnd{2,R} num2str(cc)];
-                                tf = strcmp(x, label);
-                                idx = find(tf);
-                                MATpval(c,cc)= pval(f,idx); %Mettre les  p sous forme de matrice
+%                                 x = [lgnd{2,R} num2str(c) '-' lgnd{2,R} num2str(cc)];
+%                                 tf = strcmp(x, label);
+%                                 idx = find(tf);
+                                MATpval(c,cc) = pval(f,x); %Mettre les  p sous forme de matrice
+                                x = x + 1;
                             end
                         end
                     else
@@ -94,15 +105,6 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
                     clear c cc x tf idx
 
                     id = 1;
-                    %         MAT = MATsigch; %DATA{id}.MAT %loader matrice
-                    %         List = strvcat(DATA{id}.ZoneList); %liste des paires SD
-                    %         ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
-                    %         plotLst = DATA{id}.zone.plotLst;
-                    %         label =  DATA{id}.zone.label;
-                    %         fileorderconnectogram  = 'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Mixte.txt';
-                    %         plotconnectogram(fileorderconnectogram,MAT,List,label,plotLst,ML)
-                    %         savefig([savepath date '_ConnectSigCh']);
-
                     MATneg = MATsig < 0;
                     MAT = MATsig.*(MATneg); %DATA{id}.MAT %loader matrice
                     if any(MAT,'all') && contains(dat,'Ch')
@@ -110,13 +112,24 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
                         ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
                         plotLst = DATA{id}.zone.plotLst;
                         labelzone =  DATA{id}.zone.label;
-                        plotconnectogram(fileorderconnectogram{1,R},MAT,List,labelzone,plotLst,ML)
+                        labelzone = strrep(labelzone, '_', ' ');
+                        plotconnectogram(fileorderconnectogram{1,R},MAT(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
+                        fig = gcf;
+                        pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
                         savefig([savepath date '_' dat 'NegConnectSigG1G2' fac]);
+                        exportgraphics(gcf,[savepath dat 'NegConnectSigG1G2' fac '.png'])
+                        close
                     elseif any(MAT,'all') && contains(dat,'roi')
                         plotLst = DATA(2,:);
                         labelzone =  DATA(1,:);
                         plotconnectogramroi(fileorderconnectogram{1,R},MAT,labelzone,plotLst)
+                        fig = gcf;
+                        pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
                         savefig([savepath date '_' dat 'NegConnectSigG1G2' fac]);
+                        exportgraphics(gcf,[savepath dat 'NegConnectSigG1G2' fac '.png'])
+                        close
                     else
                     end
 
@@ -127,13 +140,24 @@ function [tblres, tblpval, tblpvalsig, tblressig, tblfacpvalsig, tblfacressig] =
                         ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
                         plotLst = DATA{id}.zone.plotLst;
                         labelzone =  DATA{id}.zone.label;
-                        plotconnectogram(fileorderconnectogram{1,R},MAT,List,labelzone,plotLst,ML)
+                        labelzone = strrep(labelzone, '_', ' ');
+                        plotconnectogram(fileorderconnectogram{1,R},MAT(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
+                        fig = gcf;
+                        pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
                         savefig([savepath date '_' dat 'PosConnectSigG1G2' fac]);
+                        exportgraphics(gcf,[savepath dat 'PosConnectSigG1G2' fac '.png'])
+                        close
                     elseif any(MAT,'all') && contains(dat,'roi')
                         plotLst = DATA(2,:);
                         labelzone =  DATA(1,:);
                         plotconnectogramroi(fileorderconnectogram{1,R},MAT,labelzone,plotLst)
+                        fig = gcf;
+                        pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
                         savefig([savepath date '_' dat 'PosConnectSigG1G2' fac]);
+                        exportgraphics(gcf,[savepath dat 'PosConnectSigG1G2' fac '.png'])
+                        close
                     else
                     end
                 end
