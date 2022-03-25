@@ -18,11 +18,20 @@ fs = NIRS.Cf.dev.fs;
 % Load Selected factors
 load(fullfile(dir2,'SelectedFactors.mat'),'PARCOMP');
 
-Grows = find(contains({PARCOMP.label},corr)); %rows where the selected global regression is localized
-validblocks=[PARCOMP(Grows).file];
+% Grows = find(contains({PARCOMP.label},corr)); %rows where the selected global regression is localized
+% validblocks=[PARCOMP(Grows).file];
 
+for i = 1:size(PARCOMP,2)
+    labels = {PARCOMP.label};
+    ilabel = labels{i};
+    match = ["ExtPhysio_", "_Bl01"];
+    ilabel = erase(ilabel,match);
+    Grows(:,i) = matches(ilabel,corr); %rows where the selected global regression is localized
+end
+Grows = find(Grows);
+validblocks = [PARCOMP(Grows).file];
 
-for f=1:size(rDtp,1) %Loop over all files of a NIRS.mat
+for f = 1:size(rDtp,1) %Loop over all files of a NIRS.mat
     
     [dir1,fil1,ext1] = fileparts(rDtp{f});
     infilevmrk = fullfile(dir1,[fil1 '.vmrk']);
@@ -35,23 +44,23 @@ for f=1:size(rDtp,1) %Loop over all files of a NIRS.mat
     d = fopen_NIR(rDtp{f,1},NC);
     
     if any(validblocks==f) %if the block is identified as good
-        newDATA=PARCOMP(Grows(find(validblocks==f))).dataCORR;
-        if NC==size(newDATA,1)
-            %do nothing
-        elseif NC==size(newDATA,2)
-            newDATA=permute(newDATA,[2 1]);
-        else
-            error('Corrected data doesnt have the same number of channels as the original data. Please check.')
+        if numel(find(validblocks==f)) > 1
+            error('One bloc or file is corrected twice with the same method')
+        elseif numel(find(validblocks==f)) == 1
+            newDATA = PARCOMP(Grows(find(validblocks==f))).dataCORR;
+            if NC==size(newDATA,1)
+                %do nothing
+            elseif NC==size(newDATA,2)
+                newDATA = permute(newDATA,[2 1]);
+            else
+                error('Corrected data doesnt have the same number of channels as the original data. Please check.')
+            end
         end
-        
     else %all channels of the block have been previously marked as bad
-        newDATA=nan(size(d));
-        
+        newDATA = nan(size(d));
     end
     
     fwrite_NIR(outfile,newDATA);
-    
-    fprintf('%s\n',outfile);
     
     %write new .vmrk file
     try
@@ -87,8 +96,12 @@ for f=1:size(rDtp,1) %Loop over all files of a NIRS.mat
     end
     NIRS.Dt.fir.pp(lst+1).p{f,1} = outfile;
     clear newDATA
+
+        
+    fprintf('Write NIRS done computing for block %.0f in %s\n',f, outfile);
+
 end
 save(fullfile(dir2,'NIRS.mat'),'NIRS');
-out =fullfile(dir2,'NIRS.mat');
+out = fullfile(dir2,'NIRS.mat');
 
 end
