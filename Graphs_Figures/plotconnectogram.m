@@ -13,7 +13,7 @@ fid = fopen(fileorderconnectogram,'r');
 id = 1;
 while ~feof(fid)
     tline = fgetl(fid);
-    listselected{id} = tline;
+    listselected{id} = tline; %extract list from connectogramfile
     id = id+1;
 end
 fclose(fid);

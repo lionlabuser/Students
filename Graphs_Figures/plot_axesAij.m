@@ -21,17 +21,17 @@ MAT = DATA{id}.MAT;
 if get(handles.radio_fisher,'value')
     MAT =1/2*(log((1+MAT )./(1-MAT )));
 end
-List = strvcat(DATA{id}.ZoneList);
-ML = DATA{id}.zone.ml;
+List = strvcat(DATA{id}.ZoneList); %input list
+ML = DATA{id}.zone.ml; %zone file in data
 idzone = [];
 idlist = [];
 idlabelall = [];
 %POUR IDENTIFICATION DE TOUTE LES ZONES
-for izone = 1:numel(DATA{id}.zone.plotLst)
+for izone = 1:numel(DATA{id}.zone.plotLst) %for each zone
     chzone = DATA{id}.zone.plotLst{izone};
-    for ichzone = 1:numel(chzone)
+    for ichzone = 1:numel(chzone) %for each channel
         ich = chzone(ichzone);
-        switch  DATA{id}.System
+        switch  DATA{id}.System %find label according to system
             case 'ISS Imagent'
                 strDet = SDDet2strboxy_ISS(ML(ich,2));
                 strSrs = SDPairs2strboxy_ISS(ML(ich,1));
@@ -39,33 +39,33 @@ for izone = 1:numel(DATA{id}.zone.plotLst)
             case 'NIRx'
                 strDet = SDDet2strboxy(ML(ich,2));
                 strSrs = SDPairs2strboxy(ML(ich,1));
-                idch = strmatch([strDet, ' ',strSrs ],List,'exact');
+                idch = strmatch([strDet, ' ',strSrs ],List,'exact'); %match zone file with input list
             otherwise
                 strDet = SDDet2strboxy_ISS(ML(ich,2));
                 strSrs = SDPairs2strboxy_ISS(ML(ich,1));
                 idch = strmatch([strDet, ' ',strSrs ],List,'exact');
         end
-        idlist = [idlist, idch];
+        idlist = [idlist, idch]; %list of channel numbers in new order
         if ichzone==1
-            idzone =[idzone, izone];
+            idzone =[idzone, izone]; %list of zones numbers in new order
         else
             idzone =[idzone, 0];
         end
     end
-    idlabelall = [idlabelall, {[DATA{id}.zone.label{izone}]}];
+    idlabelall = [idlabelall, {[DATA{id}.zone.label{izone}]}]; %list of zone labels in new order
 end
 set(handles.listbox_zone,'string',idlabelall);
 %FIN
 
 %POUR L'AFFICHAGE DES ZONES SELECTIONNÉES CANAL PAR CANAL
-if get(handles.popupmenu_view,'value')==1%view zone
+if get(handles.popupmenu_view,'value')==1 %view zone
     listok = get(handles.listbox_selectedzone,'string');
     idlist = [];
     idlabel=[];
     idzone =[];
     izonebelong = [];
     for ilistzone = 1:numel(listok)
-        for izone = 1:numel(DATA{id}.zone.plotLst)
+        for izone = 1:numel(DATA{id}.zone.plotLst) %find selected zone in zone list
             chzone = DATA{id}.zone.plotLst{izone};
             labelzone = DATA{id}.zone.label{izone};
             x = strmatch({labelzone} , {listok{ilistzone}}, 'exact');
