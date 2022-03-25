@@ -29,12 +29,12 @@ lst = length(NIRS.Dt.fir.pp); %list of preprocessing steps
 rDtp = NIRS.Dt.fir.pp(lst).p; % path for files to be processed
 NC = NIRS.Cf.H.C.N; %number channels
 fs = NIRS.Cf.dev.fs; %sampling rate
-
-disp(['Computing AUX regression for ' NIRS.Dt.s.p(end-6:end-1)])
+idpart = job.ID;
+disp(['Computing AUX regression for ' idpart])
 
 if ~contains(job.covariables,'Constant','IgnoreCase',true)
-    cov.labels=['Constant,' job.covariables];
-    cov.labels =split(cov.labels,','); %get names of covariables to regress
+    cov.labels = ['Constant,' job.covariables];
+    cov.labels = split(cov.labels,','); %get names of covariables to regress
 end
 
 if isfield(job,'nbtimeminimum')
@@ -62,27 +62,30 @@ if ~isfield(NIRS.Dt,'AUX') %verify if theres an AUX
     error('No auxiliary attached to the NIRS file %s', (job.NIRSmat{1}))
 end
 
-for iAUX = 1:numel(NIRS.Dt.AUX) %Find the filtered AUX
-    newAUX = numel(NIRS.Dt.AUX)+1;
-    if contains(NIRS.Dt.AUX(iAUX).label,'AUX') || contains(NIRS.Dt.AUX(iAUX).label,'EEG')
-        if contains(NIRS.Dt.AUX(iAUX).label,'fil')
-            idAUX = iAUX;
-            break
-        end
-    end
-end
-if ~exist('idAUX','var') %verify if a filtered AUX could be found
+%for iAUX = 1:numel(NIRS.Dt.AUX) %Find the filtered AUX
+listAUX = {NIRS.Dt.AUX.label};
+if sum(contains(listAUX, 'fil'))>1
+%     [indx, tf] = listdlg('PromptString',{'Multiple filtered AUX in the NIRSmat file.',...
+%         'Select which one you want to regress.',''},'SelectionMode','single','ListString',listAUX(1,contains(listAUX, 'fil')));
+    indx = 2; %à retirer!
+    usedAUX = find(contains(listAUX, 'fil'));
+    usedAUX = usedAUX(indx);
+%     if ~any(tf)
+%         fprint('No AUX selected, participant will be skipped')
+%         return
+%     end
+elseif sum(contains(listAUX, 'fil'))
+    usedAUX = find(contains(listAUX, 'fil'));
+else
     error('No filtered AUX make sure to run filterAUX before this script')
 end
+%end
 
-for ilabel = 1:numel(NIRS.Dt.AUX)
-    AUXlabels{ilabel} = NIRS.Dt.AUX(ilabel).label;
-end
-if sum(contains(AUXlabels,'fil'))>1
-    error('More than one filtered AUX')
+if ~(contains(NIRS.Dt.AUX(usedAUX).label,'AUX') || contains(NIRS.Dt.AUX(usedAUX).label,'EEG'))
+    error('The selected file is not an AUX/EEG file')
 end
 
-goodAUX = NIRS.Dt.AUX(idAUX);
+goodAUX = NIRS.Dt.AUX(usedAUX);
 
 if ~isfield(goodAUX.pp(end),'sync_timesec') %check if there were synchronisation -take the last field
     error('No segmentation have been made -- ensure that aux synchronisation are ok');
@@ -162,7 +165,7 @@ for f = 1:size(rDtp,1) %for each block
         atstart = 0;
         disp('Warning! Synchronization time not found. Automatically set to 0')
     end
-    atstop = atstart + NIRS.Dt.fir.sizebloc{f}*1/fs;
+    atstop = atstart + NIRS.Dt.fir.sizebloc{f}*1/fs ;
     %[aPATH,aFILE,aEXT] = fileparts(goodAUX.pp(end).p{f}); %current path file and extension
     [adata,ainfoBV,~,~] = fopen_EEG(goodAUX.pp(end).p{f}, atstart, atstop); %load AUX
     
@@ -231,7 +234,7 @@ for f = 1:size(rDtp,1) %for each block
     %%write SELECTED FACTORS new info
     PARCOMP(Prow).file= f;
     PARCOMP(Prow).filestr =  sprintf('Bl%02.0f', f);
-    PARCOMP(Prow).label= ['ExtPhysio_' [cov.labels{~(1:length(cov.labels)==cov.ConstantID)}] '_' PARCOMP(Prow).filestr];
+    PARCOMP(Prow).label= ['ExtPhysio_' job.e_NIRSmatdirnewbranch '_' PARCOMP(Prow).filestr]; %[cov.labels{~(1:length(cov.labels)==cov.ConstantID)}]
     PARCOMP(Prow).type = 'GLM';
     PARCOMP(Prow).beta = tmpbeta; %beta
     PARCOMP(Prow).std = tmpErrorVariance;

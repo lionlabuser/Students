@@ -204,7 +204,7 @@ for filenb=1:size(job.NIRSmat,1)
                 close
                 clear figaux
            end
-        %end
+       end
     end
     fprintf('Artifact identification completed.\n')
     out(outrow).part = idpart;
