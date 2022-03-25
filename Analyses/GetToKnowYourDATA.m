@@ -1,21 +1,22 @@
 %%%%%%%%%%%%%%GetToKnowYourDATA%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-disp('Computing GetToKnowYourDATA')
 
-datapath = 'C:\data\CINC\CINC4m\test_nov21\';
+datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses\Stats\CORR0,01_0,08\PCAPW_nocriteria\fisher\';
 load ([datapath 'workspace.mat'])
 %load ([datapath 'workspacemat.mat'])
 
-fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Mixte.txt',...
-                         'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Region.txt',...
-                         'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Fonction.txt',...
-                         'C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Connectogram_Aire.txt'};
+disp(['Computing GetToKnowYourDATA on ' datapath])
+
+fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Mixte.txt',...
+                         'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Region.txt',...
+                         'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Fonction.txt',...
+                         'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Aire.txt'};
 
 descrstatsmode = 1;
 graphmode = 1;
 channelmode = 1;
 importROI = 0;
-calculateROI = 0;
+calculateROI = 1;
 
 %%
 %%Stats descriptives%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -24,23 +25,18 @@ disp('Computing Descriptive Statistics')
 if descrstatsmode
     %Channels%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if importROI == 0 & channelmode == 1
-        %données de FC séparée par groupe
-        datachG1 = datach(idG1,:);
-        datachG2 = datach(idG2,:);
-        
-        %normalité et valeurs extrêmes%
-        meanG1ch = nanmean(datachG1);
-        meanG2ch = nanmean(datachG1);
-        stdG1ch = nanstd(datachG1);
-        stdG2ch = nanstd(datachG1);
-        sknG1ch = skewness(datachG1);
-        sknG2ch = skewness(datachG1);
-        krtG1ch = kurtosis(datachG1);
-        krtG2ch = kurtosis(datachG1);
 
-        tblgrmeanch = [array2table([meanG1ch],'VariableNames',labelch); array2table([meanG2ch],'VariableNames',labelch)];
+        %normalité et valeurs extrêmes%
+        stdchG1 = nanstd(datachG1);
+        stdchG2 = nanstd(datachG2);
+        sknchG1 = skewness(datachG1);
+        sknchG2 = skewness(datachG2);
+        krtchG1 = kurtosis(datachG1);
+        krtchG2 = kurtosis(datachG2);
+
+        tblgrmeanch = [array2table([datameanchG1],'VariableNames',labelch); array2table([datameanchG2],'VariableNames',labelch)];
         tblgrmeanch.Properties.RowNames = {'G1','G2'};
-        tbldescrch = array2table([meanG1ch; meanG2ch; stdG1ch; stdG2ch; sknG1ch; sknG2ch; krtG1ch; krtG2ch],'VariableNames',labelch,'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
+        tbldescrch = array2table([datameanchG1; datameanchG2; stdchG1; stdchG2; sknchG1; sknchG2; krtchG1; krtchG2],'VariableNames',labelch,'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
 
         tf = tbldescrch{{'sknG1','sknG2','krtG1','krtG2'},:} >2 | tbldescrch{{'sknG1','sknG2','krtG1','krtG2'},:} <-2;
         n_abnormal = sum(any(tf));
@@ -107,30 +103,35 @@ if descrstatsmode
 
         [sortchnan,indexchnan] = sort(cell2mat(nanfreq(:,1)),'descend');
         mostnanch = sortchnan > 30/100*size(MATall,3); %30% ou plus de données manquantes
-        pbnanch = Listch(indexchnan(mostnanch));
+        pbnanch =  ListCh(indexchnan(mostnanch));
         if isempty(pbnanch) == 0
            fprintf('Channel %.0f has more than 30 percent missing values\n',pbnanch)
         else
         end
 
-        figure
+        fig = figure;
         X = categorical(1:size(MATall,1));
         bar(X,cell2mat(nanfreq(:,1)))
         yline(mean(cell2mat(nanfreq(:,1)),1))
         ylabel('Total number of missing')
         title('Total number of missing channels')
+        fig.WindowState = 'maximized';
         savefig([savepath date '_NANCh']);
         exportgraphics(gcf,[savepath 'NANCh.png'])
+        close
 
         if calculateROI
-            figure
+            fig = figure;
             X = categorical(roi{1,R}(1,:));
             bar(X,cell2mat(nantot(:,1)))
             yline(mean(cell2mat(nantot(:,1)),1))
             ylabel('Total number of channels')
             title('Total number of channels with missing data in each region')
+            pbaspect([1 1 1])
+            fig.WindowState = 'maximized';
             savefig([savepath date '_NANChBYROI']);
             exportgraphics(gcf,[savepath 'NANChBYROI.png'])
+            close
 
             clear nantot
         end
@@ -142,18 +143,16 @@ if descrstatsmode
     if ROImode
         if importROI == 1
             %normalité et valeurs extrêmes%
-            meanG1roi = nanmean(dataroi(idG1,:));
-            meanG2roi = nanmean(dataroi(idG2,:));
-            stdG1roi = nanstd(dataroi(idG1,:));
-            stdG2roi = nanstd(dataroi(idG2,:));
-            sknG1roi = skewness(dataroi(idG1,:));
-            sknG2roi = skewness(dataroi(idG2,:));
-            krtG1roi = kurtosis(dataroi(idG1,:));
-            krtG2roi = kurtosis(dataroi(idG2,:));
+            stdroiG1 = nanstd(dataroi(idG1,:));
+            stdroiG2 = nanstd(dataroi(idG2,:));
+            sknroiG1 = skewness(dataroi(idG1,:));
+            sknroiG2 = skewness(dataroi(idG2,:));
+            krtroiG1 = kurtosis(dataroi(idG1,:));
+            krtroiG2 = kurtosis(dataroi(idG2,:));
 
-            tblgrmeanroi = [array2table([meanG1roi],'VariableNames',labelroi); array2table([meanG2roi],'VariableNames',labelroi)];
+            tblgrmeanroi = [array2table([datameanroiG1],'VariableNames',labelroi); array2table([datameanroiG2],'VariableNames',labelroi)];
             tblgrmeanroi.Properties.RowNames = {'G1','G2'};
-            tbldescrroi = array2table([meanG1roi; meanG2roi; stdG1roi; stdG2roi; sknG1roi; sknG2roi; krtG1roi; krtG2roi],'VariableNames',labelroi,'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
+            tbldescrroi = array2table([datameanroiG1; datameanroiG2; stdroiG1; stdroiG2; sknroiG1; sknroiG2; krtroiG1; krtroiG2],'VariableNames',labelroi,'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
 
             tf = tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} >2 | tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} <-2;
             n_abnormal = sum(any(tf));
@@ -207,14 +206,16 @@ if descrstatsmode
             else
             end
 
-            figure
+            fig = figure;
             X = categorical(Listroi,Listroi);
             bar(X,cell2mat(nanfreq(:,1)))
             yline(mean(cell2mat(nanfreq(:,1)),1))
             ylabel('Total number of missing')
             title('Total number of missing ROIs')
+            fig.WindowState = 'maximized';
             savefig([savepath date '_NANROI']);
             exportgraphics(gcf,[savepath 'NANROI.png'])
+            close
 
             clear x X p r n idx tf nanroi tfnanroi idxnanroi nb sortroinan indexroinan mostnanroi pbnanroi nanfreq
         end  
@@ -222,22 +223,22 @@ if descrstatsmode
         if calculateROI ==1 & importROI == 0
             %normalité et valeurs extrêmes%
             ALLroi = [];
-            for R = 1:4
+            for R = 1:numel(roi)
                 ALLroi = [ALLroi, dataroiALL{1,R}]; %%Fait pour tous les ROIS calculés ensemble%%%%%%
             end
 
-            meanG1roi = nanmean(ALLroi(idG1,:));
-            meanG2roi = nanmean(ALLroi(idG2,:));
-            stdG1roi = nanstd(ALLroi(idG1,:));
-            stdG2roi = nanstd(ALLroi(idG2,:));
-            sknG1roi = skewness(ALLroi(idG1,:));
-            sknG2roi = skewness(ALLroi(idG2,:));
-            krtG1roi = kurtosis(ALLroi(idG1,:));
-            krtG2roi = kurtosis(ALLroi(idG2,:));
+            meanALLroiG1 = nanmean(ALLroi(idG1,:));
+            meanALLroiG2 = nanmean(ALLroi(idG2,:));
+            stdALLroiG1 = nanstd(ALLroi(idG1,:));
+            stdALLroiG2 = nanstd(ALLroi(idG2,:));
+            sknALLroiG1 = skewness(ALLroi(idG1,:));
+            sknALLroiG2 = skewness(ALLroi(idG2,:));
+            krtALLroiG1 = kurtosis(ALLroi(idG1,:));
+            krtALLroiG2 = kurtosis(ALLroi(idG2,:));
 
-            tblgrmeanroi = [array2table([meanG1roi],'VariableNames',[labelroiALL{1,1:4}]); array2table([meanG2roi],'VariableNames',[labelroiALL{1,1:4}])];
+            tblgrmeanroi = [array2table([meanALLroiG1],'VariableNames',[labelroiALL{1,1:numel(roi)}]); array2table([meanALLroiG2],'VariableNames',[labelroiALL{1,1:numel(roi)}])];
             tblgrmeanroi.Properties.RowNames = {'G1','G2'};
-            tbldescrroi = array2table([meanG1roi; meanG2roi; stdG1roi; stdG2roi; sknG1roi; sknG2roi; krtG1roi; krtG2roi],'VariableNames',[labelroiALL{1,1:4}],'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
+            tbldescrroi = array2table([meanALLroiG1; meanALLroiG2; stdALLroiG1; stdALLroiG2; sknALLroiG1; sknALLroiG2; krtALLroiG1; krtALLroiG2],'VariableNames',[labelroiALL{1,1:numel(roi)}],'RowNames',{'meanG1','meanG2','stdG1','stdG2','sknG1','sknG2','krtG1','krtG2'});
 
             tf = tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} >2 | tbldescrroi{{'sknG1','sknG2','krtG1','krtG2'},:} <-2;
             n_abnormal = sum(any(tf));
@@ -250,16 +251,11 @@ if descrstatsmode
             p_extreme = n_extreme/numel(zALLroi)*100;
             fprintf('%.1f percent of the ROIs variables have extreme values\n',p_extreme);
 
-%             meanroiG1 = nanmean(dataroiALL{1,1}(idG1,:));
-%             meanroiG2 = nanmean(dataroiALL{1,1}(idG2,:));
-%             meanRroiG1 = nanmean(dataroiALL{1,2}(idG1,:));
-%             meanRroiG2 = nanmean(dataroiALL{1,2}(idG2,:));
-%             meanFroiG1 = nanmean(dataroiALL{1,3}(idG1,:));
-%             meanFroiG2 = nanmean(dataroiALL{1,3}(idG2,:));
-%             meanAroiG1 = nanmean(dataroiALL{1,4}(idG1,:));
-%             meanAroiG2 = nanmean(dataroiALL{1,4}(idG2,:));
-
-            clear X tf R ALLroi n_abnormal n_extreme p_abnormal p_extreme stdG1ch stdG2ch sknG1ch sknG2ch krtG1ch krtG2ch meanG1roi meanG2roi stdG1roi stdG2roi sknG1roi sknG2roi krtG1roi krtG2roi zchALL zroiALLmean zALLroi
+            clear X tf R ALLroi n_abnormal n_extreme p_abnormal p_extreme...
+                stdchG1 stdchG2 sknchG1 sknchG2 krtchG1 krtchG2...
+                meanroiG1 meanroiG2 stdroiG1 stdroiG2 sknroiG1 sknroiG2 krtroiG1 krtroiG2...
+                meanALLroiG1 meanALLroiG2 stdALLroiG1 stdALLroiG2 sknALLroiG1 sknALLroiG2 krtALLroiG1 krtALLroiG2...
+                zchALL zroiALLmean zALLroi
         end
     end
 end
@@ -268,32 +264,29 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%GRAPHIQUES%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if graphmode
     disp('Computing Graphics')
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%PAR CANAL%%%%%
     if channelmode
-        %données de FC séparée par groupe
-        datachG1 = datach(idG1,:);
-        datachG2 = datach(idG2,:);
-
+        
         %moyenne et std de la FC de chaque participant pour tous les canaux%
-        meanchG1part = mean(datachG1,2,'omitnan');
-        meanchG2part = mean(datachG2,2,'omitnan');
-        MmeanchG1part = mean(meanchG1part);
-        MmeanchG2part = mean(meanchG2part,'omitnan');
-        stdchG1part = std(datachG1,0,2,'omitnan');
-        stdchG2part = std(datachG2,0,2,'omitnan');
-        MstdchG1part = mean(stdchG1part);
-        MstdchG2part = mean(stdchG2part,'omitnan');
+        meanchG1p = mean(datachG1,2,'omitnan');
+        meanchG2p = mean(datachG2,2,'omitnan');
+        MmeanchG1p = mean(meanchG1p);
+        MmeanchG2p = mean(meanchG2p,'omitnan');
+        stdchG1p = std(datachG1,0,2,'omitnan');
+        stdchG2p = std(datachG2,0,2,'omitnan');
+        MstdchG1p = mean(stdchG1p);
+        MstdchG2p = mean(stdchG2p,'omitnan');
 
         %moyenne et std de la FC de chaque canal pour tous les participants%
-        meanchG1ch = mean(datachG1,'omitnan');
-        meanchG2ch = mean(datachG2,'omitnan');
-        MmeanchG1ch = mean(meanchG1ch);
-        MmeanchG2ch = mean(meanchG2ch);
-        stdchG1ch = std(datachG1,0,1,'omitnan');
-        stdchG2ch = std(datachG2,0,1,'omitnan');
-        MstdchG1ch = mean(stdchG1ch);
-        MstdchG2ch = mean(stdchG2ch);
+        meanchG1c = mean(datachG1,'omitnan');
+        meanchG2c = mean(datachG2,'omitnan');
+        MmeanchG1c = mean(meanchG1c);
+        MmeanchG2c = mean(meanchG2c);
+        stdchG1c = std(datachG1,0,1,'omitnan');
+        stdchG2c = std(datachG2,0,1,'omitnan');
+        MstdchG1c = mean(stdchG1c);
+        MstdchG2c = mean(stdchG2c);
 
         %moyenne et std de la FC pour tous les canaux et participants%
         MmeanchG1 = mean(datachG1,'all','omitnan');
@@ -301,79 +294,83 @@ if graphmode
         MstdchG1 = std(datachG1,0,'all','omitnan');
         MstdchG2 = std(datachG2,0,'all','omitnan');
 
-        figure
+        fig = figure;
         hold on
-        histg1 = histogram(meanchG1part);
+        histg1 = histogram(meanchG1p);
         histg1.Normalization = 'pdf';
         histg1.BinWidth = 0.05;
         histg1.DisplayName = 'FC G1';
-        xmin = floor((min(meanchG1part,[],'all'))*10)/10;
-        xmax = ceil(max(meanchG1part,[],'all')*10)/10;
+        xmin = floor((min(meanchG1p,[],'all'))*10)/10;
+        xmax = ceil(max(meanchG1p,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanchG1part,'Normal');
+        pd = fitdist(meanchG1p,'Normal');
         y = pdf(pd,x);
         pg1 = plot(x,y,'LineWidth',1);
         pg1.Color = [0 0.4470 0.7410];
-        histg2 = histogram(meanchG2part);
+        histg2 = histogram(meanchG2p);
         histg2.Normalization = 'pdf';
         histg2.BinWidth = 0.05;
         histg2.DisplayName = 'FC G2';
-        xmin = floor((min(meanchG2part,[],'all'))*10)/10;
-        xmax = ceil(max(meanchG2part,[],'all')*10)/10;
+        xmin = floor((min(meanchG2p,[],'all'))*10)/10;
+        xmax = ceil(max(meanchG2p,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanchG2part,'Normal');
+        pd = fitdist(meanchG2p,'Normal');
         y = pdf(pd,x);
         pg2 = plot(x,y,'LineWidth',1);
         pg2.Color = [0.9290 0.6940 0.1250];
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanchG1part,MstdchG1part,MmeanchG2part,MstdchG2part);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanchG1p,MstdchG1p,MmeanchG2p,MstdchG2p);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
         legend;
         xlabel('Functional Connectivity Value');
         ylabel('Proportion of the participants (%)');
         title('Channels Histogram of the participants FC values')
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistPartch']);
-        exportgraphics(gcf,[savepath 'HistPartch.png'])    
+        exportgraphics(gcf,[savepath 'HistPartch.png'])
+        close
 
         clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
 
-        figure
+        fig = figure;
         hold on
-        histg1 = histogram(meanchG1ch);
+        histg1 = histogram(meanchG1c);
         histg1.Normalization = 'pdf';
         histg1.BinWidth = 0.05;
         histg1.DisplayName = 'FC G1';
-        xmin = floor((min(meanchG1ch,[],'all'))*10)/10;
-        xmax = ceil(max(meanchG1ch,[],'all')*10)/10;
+        xmin = floor((min(meanchG1c,[],'all'))*10)/10;
+        xmax = ceil(max(meanchG1c,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanchG1ch','Normal');
+        pd = fitdist(meanchG1c','Normal');
         y = pdf(pd,x);
         pg1 = plot(x,y,'LineWidth',1);
         pg1.Color = [0 0.4470 0.7410];
-        histg2 = histogram(meanchG2ch);
+        histg2 = histogram(meanchG2c);
         histg2.Normalization = 'pdf';
         histg2.BinWidth = 0.05;
         histg2.DisplayName = 'FC G2';
-        xmin = floor((min(meanchG2ch,[],'all'))*10)/10;
-        xmax = ceil(max(meanchG2ch,[],'all')*10)/10;
+        xmin = floor((min(meanchG2c,[],'all'))*10)/10;
+        xmax = ceil(max(meanchG2c,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanchG2ch','Normal');
+        pd = fitdist(meanchG2c','Normal');
         y = pdf(pd,x);
         pg2 = plot(x,y,'LineWidth',1);
         pg2.Color = [0.9290 0.6940 0.1250];
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanchG1ch,MstdchG1ch,MmeanchG2ch,MstdchG2ch);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanchG1c,MstdchG1c,MmeanchG2c,MstdchG2c);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
         legend;
         xlabel('Functional Connectivity Value');
         ylabel('Proportion of the Channels (%)');
         title('Channels Histogram of the Channels FC values')
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistCHch']);
         exportgraphics(gcf,[savepath 'HistCHch.png'])
+        close
 
         clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
 
-        figure
+        fig = figure;
         hold on
         histg1 = histogram(datachG1);
         histg1.Normalization = 'pdf';
@@ -381,8 +378,8 @@ if graphmode
         histg1.DisplayName = 'FC G1';
         limits = histg1.BinLimits;
         x = limits(1,1):histg1.BinWidth:limits(1,2);
-        mu = MmeanchG1ch;
-        sigma = MstdchG1ch;
+        mu = MmeanchG1c;
+        sigma = MstdchG1c;
         f = exp(-(x-mu).^2./(2*sigma^2))./(sigma*sqrt(2*pi));
         pg1 = plot(x,f,'LineWidth',1);
         pg1.Color = [0 0.4470 0.7410];
@@ -392,8 +389,8 @@ if graphmode
         histg2.DisplayName = 'FC G2';
         limits = histg2.BinLimits;
         x = limits(1,1):histg2.BinWidth:limits(1,2);
-        mu = MmeanchG2ch;
-        sigma = MstdchG2ch;
+        mu = MmeanchG2c;
+        sigma = MstdchG2c;
         f = exp(-(x-mu).^2./(2*sigma^2))./(sigma*sqrt(2*pi));
         pg2 = plot(x,f,'LineWidth',1);
         pg2.Color = [0.9290 0.6940 0.1250];
@@ -402,41 +399,39 @@ if graphmode
         ylabel('Proportion of the FC (%)');
         title('Channels Histogram of the FC values')
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanchG1ch,MstdchG1ch,MmeanchG2ch,MstdchG2ch);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanchG1c,MstdchG1c,MmeanchG2c,MstdchG2c);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistFCch']);
         exportgraphics(gcf,[savepath 'HistFCch.png'])
+        close
 
-        clear histg1 histg2 pg1 pg2 x mu sigma f dim str limits MmeanchG1 MmeanchG1part MmeanchG1ch MmeanchG2 MmeanchG2part MmeanchG2ch MstdchG1 MstdchG1part MstdchG1ch MstdchG2 MstdchG2part MstdchG2ch
+        clear histg1 histg2 pg1 pg2 x mu sigma f dim str limits MmeanchG1 MmeanchG1p MmeanchG1c MmeanchG2 MmeanchG2p MmeanchG2c MstdchG1 MstdchG1p MstdchG1c MstdchG2 MstdchG2p MstdchG2c
 
     end
 
     %%%%%%%%%ROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     if importROI
-        %données de FC séparée par groupe
-        dataroiG1 = dataroi(idG1,:);
-        dataroiG2 = dataroi(idG2,:);
-
         %moyenne et std de la FC de chaque participant pour toutes les régions%
-        meanroiG1part = mean(dataroiG1,2,'omitnan');
-        meanroiG2part = mean(dataroiG2,2,'omitnan');
-        MmeanroiG1part = mean(meanroiG1part);
-        MmeanroiG2part = mean(meanroiG2part,'omitnan');
-        stdroiG1part = std(dataroiG1,0,2,'omitnan');
-        stdroiG2part = std(dataroiG2,0,2,'omitnan');
-        MstdroiG1part = mean(stdroiG1part);
-        MstdroiG2part = mean(stdroiG2part,'omitnan');
+        meanroiG1p = mean(dataroiG1,2,'omitnan');
+        meanroiG2p = mean(dataroiG2,2,'omitnan');
+        MmeanroiG1p = mean(meanroiG1p);
+        MmeanroiG2p = mean(meanroiG2p,'omitnan');
+        stdroiG1p = std(dataroiG1,0,2,'omitnan');
+        stdroiG2p = std(dataroiG2,0,2,'omitnan');
+        MstdroiG1p = mean(stdroiG1p);
+        MstdroiG2p = mean(stdroiG2p,'omitnan');
 
         %moyenne et std de la FC de chaque région pour tous les participants%
-        meanroiG1roi = mean(dataroiG1,'omitnan');
-        meanroiG2roi = mean(dataroiG2,'omitnan');
-        MmeanroiG1roi = mean(meanroiG1roi);
-        MmeanroiG2roi = mean(meanroiG2roi);
-        stdroiG1roi = std(dataroiG1,0,1,'omitnan');
-        stdroiG2roi = std(dataroiG2,0,1,'omitnan');
-        MstdroiG1roi = mean(stdroiG1roi);
-        MstdroiG2roi = mean(stdroiG2roi);
+        meanroiG1r = mean(dataroiG1,'omitnan');
+        meanroiG2r = mean(dataroiG2,'omitnan');
+        MmeanroiG1r = mean(meanroiG1r);
+        MmeanroiG2r = mean(meanroiG2r);
+        stdroiG1r = std(dataroiG1,0,1,'omitnan');
+        stdroiG2r = std(dataroiG2,0,1,'omitnan');
+        MstdroiG1r = mean(stdroiG1r);
+        MstdroiG2r = mean(stdroiG2r);
 
         %moyenne et std de la FC pour toutes les régions et participants%
         MmeanroiG1 = mean(dataroiG1,'all','omitnan');
@@ -446,79 +441,83 @@ if graphmode
 
         %%HISTOGRAM%%%%%%%%%%%
 
-        figure
+        fig = figure;
         hold on
-        histg1 = histogram(meanroiG1part);
+        histg1 = histogram(meanroiG1p);
         histg1.Normalization = 'pdf';
         histg1.BinWidth = 0.05;
         histg1.DisplayName = 'FC G1';
-        xmin = floor((min(meanroiG1part,[],'all'))*10)/10;
-        xmax = ceil(max(meanroiG1part,[],'all')*10)/10;
+        xmin = floor((min(meanroiG1p,[],'all'))*10)/10;
+        xmax = ceil(max(meanroiG1p,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanroiG1part,'Normal');
+        pd = fitdist(meanroiG1p,'Normal');
         y = pdf(pd,x);
         pg1 = plot(x,y,'LineWidth',1);
         pg1.Color = [0 0.4470 0.7410];
-        histg2 = histogram(meanroiG2part);
+        histg2 = histogram(meanroiG2p);
         histg2.Normalization = 'pdf';
         histg2.BinWidth = 0.05;
         histg2.DisplayName = 'FC G2';
-        xmin = floor((min(meanroiG2part,[],'all'))*10)/10;
-        xmax = ceil(max(meanroiG2part,[],'all')*10)/10;
+        xmin = floor((min(meanroiG2p,[],'all'))*10)/10;
+        xmax = ceil(max(meanroiG2p,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanroiG2part,'Normal');
+        pd = fitdist(meanroiG2p,'Normal');
         y = pdf(pd,x);
         pg2 = plot(x,y,'LineWidth',1);
         pg2.Color = [0.9290 0.6940 0.1250];
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1part,MstdroiG1part,MmeanroiG2part,MstdroiG2part);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1p,MstdroiG1p,MmeanroiG2p,MstdroiG2p);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
         legend;
         xlabel('Functional Connectivity Value');
         ylabel('Proportion of the participants (%)');
         title('Roi Histogram of the participants FC values')
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistROIPart']);
         exportgraphics(gcf,[savepath 'HistROIPart.png'])
+        close
 
         clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
 
-        figure
+        fig = figure;
         hold on
-        histg1 = histogram(meanroiG1roi);
+        histg1 = histogram(meanroiG1r);
         histg1.Normalization = 'pdf';
         histg1.BinWidth = 0.05;
         histg1.DisplayName = 'FC G1';
-        xmin = floor((min(meanroiG1roi,[],'all'))*10)/10;
-        xmax = ceil(max(meanroiG1roi,[],'all')*10)/10;
+        xmin = floor((min(meanroiG1r,[],'all'))*10)/10;
+        xmax = ceil(max(meanroiG1r,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanroiG1roi','Normal');
+        pd = fitdist(meanroiG1r','Normal');
         y = pdf(pd,x);
         pg1 = plot(x,y,'LineWidth',1);
         pg1.Color = [0 0.4470 0.7410];
-        histg2 = histogram(meanroiG2roi);
+        histg2 = histogram(meanroiG2r);
         histg2.Normalization = 'pdf';
         histg2.BinWidth = 0.05;
         histg2.DisplayName = 'FC G2';
-        xmin = floor((min(meanroiG2roi,[],'all'))*10)/10;
-        xmax = ceil(max(meanroiG2roi,[],'all')*10)/10;
+        xmin = floor((min(meanroiG2r,[],'all'))*10)/10;
+        xmax = ceil(max(meanroiG2r,[],'all')*10)/10;
         x = xmin:0.05:xmax;
-        pd = fitdist(meanroiG2roi','Normal');
+        pd = fitdist(meanroiG2r','Normal');
         y = pdf(pd,x);
         pg2 = plot(x,y,'LineWidth',1);
         pg2.Color = [0.9290 0.6940 0.1250];
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1roi,MstdroiG1roi,MmeanroiG2roi,MstdroiG2roi);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1r,MstdroiG1r,MmeanroiG2r,MstdroiG2r);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
         legend;
         xlabel('Functional Connectivity Value');
         ylabel('Proportion of the ROIs (%)');
         title('Roi Histogram of the ROIs FC values')
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistROIRoi']);
         exportgraphics(gcf,[savepath 'HistROIRoi.png'])
+        close
 
         clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
 
-        figure
+        fig = figure;
         hold on
         histg1 = histogram(dataroiG1);
         histg1.Normalization = 'pdf';
@@ -549,49 +548,55 @@ if graphmode
         dim = [.15 .6 .3 .3];
         str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1,MstdroiG1,MmeanroiG2,MstdroiG2);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistROIFC']);
         exportgraphics(gcf,[savepath 'HistROIFC.png'])
+        close
 
         clear histg1 histg2 pg1 pg2 x mu sigma f dim str limits
 
         %%%HISTFIT%%%%%%%%%%%
 
-        figure
+        fig = figure;
         hold on
-        histg1 = histfit(meanroiG1part);
+        histg1 = histfit(meanroiG1p);
         alpha(histg1,.5)
         histg1(2).Color = [0 0.4470 0.7410];
-        histg2 = histfit(meanroiG2part);
+        histg2 = histfit(meanroiG2p);
         alpha(histg2,.5)
         histg2(2).Color = [0.9290 0.6940 0.1250];
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1part,MstdroiG1part,MmeanroiG2part,MstdroiG2part);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1p,MstdroiG1p,MmeanroiG2p,MstdroiG2p);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
         legend('FC G1','gaussian G1','FC G2','gaussian G2');
         xlabel('Functional Connectivity Value');
         ylabel('Proportion of the participants (%)');
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistFitROIPart']);
         exportgraphics(gcf,[savepath 'HistFitROIPart.png'])
+        close
 
         clear histg1 histg2 dim str xlabel ylabel
 
-        figure
+        fig = figure;
         hold on
-        histg1 = histfit(meanroiG1roi);
+        histg1 = histfit(meanroiG1r);
         alpha(histg1,.5)
         histg1(2).Color = [0 0.4470 0.7410];
-        histg2 = histfit(meanroiG2roi);
+        histg2 = histfit(meanroiG2r);
         alpha(histg2,.5)
         histg2(2).Color = [0.9290 0.6940 0.1250];
         dim = [.15 .6 .3 .3];
-        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1roi,MstdroiG1roi,MmeanroiG2roi,MstdroiG2roi);
+        str = sprintf('Mean G1 = %.3f\n Std G1 = %.3f\n Mean G2 = %.3f\n Std G2 = %.3f',MmeanroiG1r,MstdroiG1r,MmeanroiG2r,MstdroiG2r);
         annotation('textbox',dim,'String',str,'FitBoxToText','on');
         legend('FC G1','gaussian G1','FC G2','gaussian G2');
         xlabel('Functional Connectivity Value');
         ylabel('Proportion of the ROIs (%)');
         title('Distribution of the FC values between groups')
+        fig.WindowState = 'maximized';
         savefig([savepath date '_HistFitROIRoi']);
         exportgraphics(gcf,[savepath 'HistFitROIRoi.png'])
+        close
 
         clear histg1 histg2 dim str xlabel ylabel
 
@@ -618,19 +623,14 @@ if graphmode
     %     end
 
           clear r histg1 histg2 dim str meang1 meang2 stdg1 stdg2 xlabel ylabel
-
-
     end
 
     if calculateROI
         for R = 1:numel(roi)
             ROIname = lgndroi{1,R};
-            %données de FC séparée par groupe
-            dataroiG1{:,R} = dataroiALL{1,R}(idG1,:);
-            dataroiG2{:,R} = dataroiALL{1,R}(idG2,:);
-
+            
             %moyenne et std de la FC de chaque participant pour tous les canaux%
-            meanroiG1p{:,R} = nanmean(dataroiG1{:,R},2);
+            meanroiG1p{:,R} = nanmean(dataroiG1{:,R},2); %moyenne de la FC de chaque participant pour tous les canaux%
             meanroiG2p{:,R} = nanmean(dataroiG2{:,R},2);
             stdroiG1p{:,R} = std(dataroiG1{:,R},0,2,'omitnan');
             stdroiG2p{:,R} = std(dataroiG2{:,R},0,2,'omitnan');
@@ -639,8 +639,8 @@ if graphmode
             MstdroiG1p{:,R} = mean(stdroiG1p{:,R});
             MstdroiG2p{:,R} = mean(stdroiG2p{:,R},'omitnan');
 
-            %moyenne de la FC de chaque région pour tous les participants%
-            meanroiG1r{:,R} = nanmean(dataroiG1{:,R});
+            %moyenne et std de la FC de chaque région pour tous les participants%
+            meanroiG1r{:,R} = nanmean(dataroiG1{:,R});%moyenne de la FC de chaque région pour tous les participants%
             meanroiG2r{:,R} = nanmean(dataroiG2{:,R});
             stdroiG1r{:,R} = std(dataroiG1{:,R},0,1,'omitnan');
             stdroiG2r{:,R} = std(dataroiG2{:,R},0,1,'omitnan');
@@ -655,7 +655,7 @@ if graphmode
             MstdroiG1{:,R} = std(dataroiG1{:,R},0,'all','omitnan');
             MstdroiG2{:,R} = std(dataroiG2{:,R},0,'all','omitnan');
             
-            figure
+            fig = figure;
             hold on
             histg1 = histogram(meanroiG1p{:,R});
             histg1.Normalization = 'pdf';
@@ -687,12 +687,14 @@ if graphmode
             ylabel('Proportion of the participants (%)');
             str = sprintf('%s Histogram of the participants FC values',ROIname);
             title(str);
-            %savefig([savepath date '_HistROIPart']);
-            %exportgraphics(gcf,[savepath 'HistROIPart.png'])
+            fig.WindowState = 'maximized';
+            savefig([savepath date '_HistROIPart']);
+            exportgraphics(gcf,[savepath 'HistROIPart.png'])
+            close
             
             clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel
             
-            figure
+            fig = figure;
             hold on
             histg1 = histogram(meanroiG1r{:,R});
             histg1.Normalization = 'pdf';
@@ -724,8 +726,10 @@ if graphmode
             ylabel('Proportion of the ROIs (%)');
             str = sprintf('%s Histogram of the ROIs FC values',ROIname);
             title(str);
-            %savefig([savepath date '_HistROIRoi']);
-            %exportgraphics(gcf,[savepath 'HistROIRoi.png'])
+            fig.WindowState = 'maximized';
+            savefig([savepath date '_HistROIRoi']);
+            exportgraphics(gcf,[savepath 'HistROIRoi.png'])
+            close
             
             clear histg1 histg2 pg1 pg2 xmin xmax x pd y dim str xlabel ylabel MmeanroiG1 MmeanroiG1p MmeanroiG1r MmeanroiG2 MmeanroiG2p MmeanroiG2r MstdroiG1 MstdroiG1p MstdroiG1r MstdroiG2 MstdroiG2p MstdroiG2r
             
@@ -753,23 +757,19 @@ if graphmode
     end
     %%%%% Différence de FC%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if importROI | channelmode
-    
-        MATmeanG1G2 = MATmeanG1 - MATmeanG2;
-        MATmeanG2G1 = MATmeanG2 - MATmeanG1;
-
-        figure
-        c = max([max(MATmeanG1G2,[],'all'), abs(min(MATmeanG1G2,[],'all'))]);
+        fig = figure;
+        c = max([max(MATallG1G2,[],'all'), abs(min(MATallG1G2,[],'all'))]);
         cmin = -c + -c/10;
         cmax = c + c/10;
         clims = [cmin cmax];
-        hG1G2 = imagesc(MATmeanG1G2,clims);
+        hG1G2 = imagesc(MATallG1G2,clims);
         colorbar
         colormap(jet)
-        set(gca,'xtick', 1:size(MATmeanG1G2,1));
-        set(gca,'xticklabel', 1:46);
+        set(gca,'xtick', 1:size(MATallG1G2,1));
+        set(gca,'xticklabel', ListCh);
         %xtickangle(90);
-        set(gca,'ytick', 1:size(MATmeanG1G2,1));
-        set(gca,'yticklabel', 1:46);
+        set(gca,'ytick', 1:size(MATallG1G2,1));
+        set(gca,'yticklabel', ListCh);
         ax = gca;
         ax.FontSize = 12;
         if importROI
@@ -777,30 +777,33 @@ if graphmode
         elseif channelmode
             title('Channels Mean G1-G2')
         end
+        pbaspect([1 1 1])
+        fig.WindowState = 'maximized';
         savefig([savepath date '_MatG1G2']);
         exportgraphics(gcf,[savepath 'MatG1G2.png'])
+        close
         
         clear c cmin cmax clims ax hG1G2
         
-        meandiff = mean(MATmeanG1G2,'all','omitnan');
-        stddiff = std(MATmeanG1G2,0,'all','omitnan');
+        meandiff = mean(MATallG1G2,'all','omitnan');
+        stddiff = std(MATallG1G2,0,'all','omitnan');
         tr = stddiff*2; %threshold de différence = 2 écarts type
-        tf = (MATmeanG1G2>tr|MATmeanG1G2<-tr);
-        MATG1G2 = MATmeanG1G2.*tf;
+        tf = (MATallG1G2>tr|MATallG1G2<-tr);
+        MATSDG1G2 = MATallG1G2.*tf;
 
-        figure
-        c = max([max(MATG1G2,[],'all'), abs(min(MATG1G2,[],'all'))]);
+        fig = figure;
+        c = max([max(MATSDG1G2,[],'all'), abs(min(MATSDG1G2,[],'all'))]);
         cmin = -c + -c/10;
         cmax = c + c/10;
         clims = [cmin cmax];
-        hG1G2int = imagesc(MATG1G2,clims);
+        hG1G2int = imagesc(MATSDG1G2,clims);
         colorbar
         colormap(jet)
-        set(gca,'xtick', 1:size(MATG1G2,1));
-        set(gca,'xticklabel', 1:46);
+        set(gca,'xtick', 1:size(MATSDG1G2,1));
+        set(gca,'xticklabel', ListCh);
         %xtickangle(90);
-        set(gca,'ytick', 1:size(MATG1G2,1));
-        set(gca,'yticklabel', 1:46);
+        set(gca,'ytick', 1:size(MATSDG1G2,1));
+        set(gca,'yticklabel', ListCh);
         ax = gca;
         ax.FontSize = 12;
         if importROI
@@ -808,31 +811,34 @@ if graphmode
         elseif channelmode
             title('Channels Mean G1-G2 > 2SD')
         end
+        pbaspect([1 1 1])
+        fig.WindowState = 'maximized';
         savefig([savepath date '_MatSDG1G2']);
         exportgraphics(gcf,[savepath 'MatSDG1G2.png'])
+        close
         
         clear meandiff stddiff tr tf c cmin cmax clims ax hG1G2int
 
-        datachG1G2 = MATvTBL.MAT2TBL(MATG1G2); %transformer la matrice en tableau
-        tf = datachG1G2 ~= 0 & datachG1G2 > 0;
+        DATSDG1G2 = MATvTBL.MAT2TBL(MATSDG1G2); %transformer la matrice en tableau
+        tf = DATSDG1G2 ~= 0 & DATSDG1G2 > 0;
         idxpos = find(tf);
-        tf = datachG1G2 ~= 0 & datachG1G2 < 0;
+        tf = DATSDG1G2 ~= 0 & DATSDG1G2 < 0;
         idxneg = find(tf);
 
-        figure
+        fig = figure;
         hold on
         if importROI
             X = categorical(labelroi(idxpos));
         elseif channelmode
             X = categorical(labelch(idxpos));
         end
-        bar(X,datachG1G2(1,idxpos), 'r')
+        bar(X,DATSDG1G2(1,idxpos), 'r')
         if importROI
             X = categorical(labelroi(idxneg));
         elseif channelmode
             X = categorical(labelch(idxneg));
         end
-        bar(X,datachG1G2(1,idxneg), 'b')
+        bar(X,DATSDG1G2(1,idxneg), 'b')
         ylabel('Pearson correlation Difference G1-G2');
         if importROI
             xlabel('Pair of ROIs');
@@ -844,24 +850,31 @@ if graphmode
         elseif channelmode
             title('Channels Largest FC difference between G1 and G2')
         end
+        fig.WindowState = 'maximized';
         savefig([savepath date '_TblSDG1G2']);
         exportgraphics(gcf,[savepath 'TblSDG1G2.png'])
+        close
         
-        if find(MATG1G2)
+        if find(MATSDG1G2)
             id = 1;
-            List = strvcat(DATA{id}.ZoneList); %liste des paires SD
-            ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
+            List = ZoneList; %strvcat(DATA{id}.ZoneList); %liste des paires SD
+            ML = DATA{id}.zone.ml; %Loader S/D/ROI/HBO-HBR
             plotLst = DATA{id}.zone.plotLst;
             label =  DATA{id}.zone.label;
-            plotconnectogram(fileorderconnectogram{1,1},MATG1G2,List,label,plotLst,ML)
+            label = strrep(label, '_', ' ');
+            plotconnectogram(fileorderconnectogram{1,1},MATSDG1G2(ListChinv,ListChinv),List,label,plotLst,ML)
             str = sprintf('%s Largest FC difference between G1 and G2');
             title(str)
+            fig = gcf;
+            pbaspect([1 1 1])
+            fig.WindowState = 'maximized';
             savefig([savepath date '_ConnectSDG1G2']);
-            %exportgraphics(gcf,[savepath 'ConnectSDG1G2.png'])
+            exportgraphics(gcf,[savepath 'ConnectSDG1G2.png'])
+            close
         else
         end
         
-        clear MATG1G2 tf idxpos idxneg X id List plotLst label str
+        clear MATSDG1G2 tf idxpos idxneg X id List ML plotLst label str
         
     end
     
@@ -870,100 +883,107 @@ if graphmode
         for R = 1:numel(roi)
             ROIname = sprintf('%s',lgndroi{1,R});
             
-            dataroiG1G2{:,R} = meanroiG1r{:,R} - meanroiG2r{:,R};
-            dataroiG2G1{:,R} = meanroiG2r{:,R} - meanroiG1r{:,R};           
-            %convertir les données en matrices
-            MATroimeanG1G2{:,R} = MATvTBL.TBL2MAT(dataroiG1G2{:,R});
-            
-            figure
-            c = max([max(MATroimeanG1G2{:,R},[],'all'), abs(min(MATroimeanG1G2{:,R},[],'all'))]);
+            fig = figure;
+            c = max([max(MATroiG1G2{:,R},[],'all'), abs(min(MATroiG1G2{:,R},[],'all'))]);
             cmin = -c + -c/10;
             cmax = c + c/10;
             clims = [cmin cmax];
-            hG1G2 = imagesc(MATroimeanG1G2{:,R},clims);
+            hG1G2 = imagesc(MATroiG1G2{:,R},clims);
             colorbar
             colormap(jet)
-            set(gca,'xtick', 1:size(MATroimeanG1G2{:,R},1));
+            set(gca,'xtick', 1:size(MATroiG1G2{:,R},1));
             set(gca,'xticklabel', roi{1,R}(1,:));
             xtickangle(90);
-            set(gca,'ytick', 1:size(MATroimeanG1G2{:,R},1));
+            set(gca,'ytick', 1:size(MATroiG1G2{:,R},1));
             set(gca,'yticklabel', roi{1,R}(1,:));
             ax = gca;
             ax.FontSize = 12;
             str = sprintf('%s Mean G1-G2',ROIname);
             title(str)
             str = sprintf('_MatG1G2 %s',ROIname);
+            pbaspect([1 1 1])
+            fig.WindowState = 'maximized';
             savefig([savepath date str]);
-            exportgraphics(gcf,[savepath str '.png'])
+            exportgraphics(gcf,[savepath str(2:end) '.png'])
+            close
             clear c cmin cmax clims ax str hG1G2
             
-            meandiff = mean(MATroimeanG1G2{:,R},'all','omitnan');
-            stddiff = std(MATroimeanG1G2{:,R},0,'all','omitnan');
+            meandiff = mean(MATroiG1G2{:,R},'all','omitnan');
+            stddiff = std(MATroiG1G2{:,R},0,'all','omitnan');
             tr = stddiff*2; %threshold de différence = 2 écarts type
-            tf = (MATroimeanG1G2{:,R}>tr|MATroimeanG1G2{:,R}<-tr);
-            MATG1G2 = MATroimeanG1G2{:,R}.*tf;
+            tf = (MATroiG1G2{:,R}>tr|MATroiG1G2{:,R}<-tr);
+            MATroiSDG1G2 = MATroiG1G2{:,R}.*tf;
             
-            figure
-            c = max([max(MATG1G2,[],'all'), abs(min(MATG1G2,[],'all'))]);
+            fig = figure;
+            c = max([max(MATroiSDG1G2,[],'all'), abs(min(MATroiSDG1G2,[],'all'))]);
             cmin = -c + -c/10;
             cmax = c + c/10;
             clims = [cmin cmax];
-            hG1G2int = imagesc(MATG1G2,clims);
+            hG1G2int = imagesc(MATroiSDG1G2,clims);
             colorbar
             colormap(jet)
-            set(gca,'xtick', 1:size(MATG1G2,1));
+            set(gca,'xtick', 1:size(MATroiSDG1G2,1));
             set(gca,'xticklabel', roi{1,R}(1,:));
             xtickangle(90);
-            set(gca,'ytick', 1:size(MATG1G2,1));
+            set(gca,'ytick', 1:size(MATroiSDG1G2,1));
             set(gca,'yticklabel', roi{1,R}(1,:));
             ax = gca;
             ax.FontSize = 12;
             str = sprintf('%s Mean G1-G2 > 2SD',ROIname);
             title(str)
             str = sprintf('_MatSDG1G2 %s',ROIname);
+            pbaspect([1 1 1])
+            fig.WindowState = 'maximized';
             savefig([savepath date str]);
-            exportgraphics(gcf,[savepath str '.png'])
+            exportgraphics(gcf,[savepath str(2:end) '.png'])
+            close
         
             clear meandiff stddiff tr tf c cmin cmax clims ax str hG1G2int
             
-            DATG1G2 = MATvTBL.MAT2TBL(MATG1G2); %transformer la matrice en tableau
-            tf = DATG1G2 ~= 0 & DATG1G2 > 0;
+            DATroiSDG1G2 = MATvTBL.MAT2TBL(MATroiSDG1G2); %transformer la matrice en tableau
+            tf = DATroiSDG1G2 ~= 0 & DATroiSDG1G2 > 0;
             idxpos = find(tf);
-            tf = DATG1G2 ~= 0 & DATG1G2 < 0;
+            tf = DATroiSDG1G2 ~= 0 & DATroiSDG1G2 < 0;
             idxneg = find(tf);
             
-            figure
+            fig = figure;
             hold on
             X = categorical(labelroiALL{1,R}(idxpos));
-            bar(X,DATG1G2(1,idxpos), 'r')
+            bar(X,DATroiSDG1G2(1,idxpos), 'r')
             X = categorical(labelroiALL{1,R}(idxneg));
-            bar(X,DATG1G2(1,idxneg), 'b')
+            bar(X,DATroiSDG1G2(1,idxneg), 'b')
             ylabel('Pearson correlation Difference G1-G2');
             xlabel('Pair of ROIs')
             str = sprintf('%s Largest FC difference between G1 and G2',ROIname);
             title(str);
             str = sprintf('_TblSDG1G2 %s',ROIname);
+            fig.WindowState = 'maximized';
             savefig([savepath date str]);
-            exportgraphics(gcf,[savepath str '.png'])
+            exportgraphics(gcf,[savepath str(2:end) '.png'])
+            close
         
-            if find(MATG1G2)
+            if find(MATroiSDG1G2)
             plotLst = roi{:,R}(2,:);
             label =  roi{:,R}(1,:);
-            plotconnectogramroi(fileorderconnectogram{:,R},MATG1G2,label,plotLst)
+            plotconnectogramroi(fileorderconnectogram{:,R},MATroiSDG1G2,label,plotLst)
             str = sprintf('_ConnectSDG1G2 %s',ROIname);
+            fig = gcf;
+            pbaspect([1 1 1])
+            fig.WindowState = 'maximized';
             savefig([savepath date str]);
-            %exportgraphics(gcf,[savepath str '.png'])
+            exportgraphics(gcf,[savepath str(2:end) '.png'])
+            close
             else
             end 
             
-            clear MATG1G2 DATG1G2 tf idxpos idxneg X str plotLst label  R ROIname
+            clear MATSDG1G2 DATSDG1G2 MATroiSDG1G2 DATroiSDG1G2 tf idxpos idxneg X str plotLst label  R ROIname
         end
     end
 end
 
-save([savepath 'workspace.mat'])
+%save([savepath 'workspace.mat'])
 
 X = ['Results saved in ', savepath];
 disp(X)
-clear X
+clear all
 toc
