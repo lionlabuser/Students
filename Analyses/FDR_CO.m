@@ -1,7 +1,7 @@
-function FDR_CO(pval, labelfactors, p, dat, savepath)
+function FDR_CO(pval, labelfactors, labels, p, dat, savepath)
 
     for f = 1:numel(labelfactors)
-        % FDR according to Storey 2002%%%
+        % FDR according to Storey 2002%%% %BAD ONE
 %         [fdr,q] = mafdr(pval(f,:)');
 %         n_sig = sum(q <= p);
 %         fprintf('%d %s effects are significant p<=%.2f using FDR correction (Storey2002) for %s\n',n_sig,labelfactors{f,1}, p, dat)
@@ -10,6 +10,13 @@ function FDR_CO(pval, labelfactors, p, dat, savepath)
         [h1, crit_p, adj_ci_cvrg, adj_p] = fdr_bh(pval(f,:), 0.05, 'pdep', 'no' );
         n_sig = sum(adj_p(1,:) <= p);
         fprintf('%d %s effects are significant p<=%.2f using FDR correction (Benjamini1995) for %s\n',n_sig,labelfactors{f,1}, p, dat)
+        
+        if n_sig >= 1
+            isig = find(adj_p(1,:) <= p);
+            for e = 1:numel(isig)
+                fprintf('\t Significant effect: %.3f for %s\n', adj_p(1,isig(e)),labels{1,isig(e)})
+            end
+        end
 
         % % FDR according to Benjamini & Hochberg(1995) de Gerber%%%%
         % [ind, thres] = FDR(pch(f,:));
