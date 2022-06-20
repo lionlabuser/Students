@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%ANCOVA%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses\Stats\CORR0,01_0,08\PCAPW_nocriteria\fisher\';
+    
+datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses\Stats\CORR0,01_0,08\PCAPW\CorrPairC0,25 ExcY\nofisher\';
 load ([datapath 'workspace.mat'])
 %load ([datapath 'workspacemat.mat'])
 
@@ -19,7 +19,7 @@ graphmode = 1;
 fdrmode = 1;
 nointeractionmode = 1;
 interactionmode = 1;
-p = 0.07;
+p = 0.05;
 
 fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Mixte.txt',...
     'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Region.txt',...
@@ -71,7 +71,7 @@ if nointeractionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalch, labelfactors, p, dat, savepath)
+            FDR_CO(pvalch, labelfactors, labelch, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -244,7 +244,7 @@ if nointeractionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalMroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalMroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -281,7 +281,7 @@ if nointeractionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalRroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalRroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -318,7 +318,7 @@ if nointeractionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalFroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalFroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -356,7 +356,7 @@ if nointeractionmode == 1
 
         %%%%fdr%%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalAroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalAroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -369,9 +369,7 @@ if nointeractionmode == 1
         %             writetable(tblgrpsigALL,[savepath date '_grpsigresultsALL.xls'],'WriteRowNames',true);
         %         end
     end
-    X = ['Results saved in ', savepath];
-    disp(X)
-    clear X
+    fprintf('Results saved in %s\n', savepath)
 end
 
 clearvars -except datapath savepathinitial channelmode importedROImode calculatedROImode graphmode fileorderconnectogram fdrmode nointeractionmode interactionmode p
@@ -421,7 +419,7 @@ if interactionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalch, labelfactors, p, dat, savepath)
+            FDR_CO(pvalch, labelfactors, labelch, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -602,7 +600,7 @@ if interactionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalMroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalMroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -640,7 +638,7 @@ if interactionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalRroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalRroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -678,7 +676,7 @@ if interactionmode == 1
 
         %%fdr%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalFroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalFroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -716,7 +714,7 @@ if interactionmode == 1
 
         %%%%fdr%%%%%%%%%%%%%
         if fdrmode == 1
-            FDR_CO(pvalAroi, labelfactors, p, dat, savepath)
+            FDR_CO(pvalAroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
         end
 
         %%tableaux des résultats%%%%%%%%%%%%%%%%
@@ -729,10 +727,7 @@ if interactionmode == 1
         %             writetable(tblgrpsigALL,[savepath date '_grpsigresultsALL.xls'],'WriteRowNames',true);
         %         end
     end
-
-    X = ['Results saved in ', savepath];
-    disp(X)
-    clear
+fprintf('Results saved in %s\n', savepath)
 end
-
+clear
 toc

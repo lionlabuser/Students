@@ -164,4 +164,5 @@ ax = gca;
 ax.XAxis.Color = 'None';
 ax.YAxis.Color = 'None';
 ax.OuterPosition = [0.25 0.28 0.5 0.5];
-colorbar('Position',[0.9 0.18 0.0305 0.7])
+daspect([1 1 1])
+%colorbar('Position',[0.85 0.18 0.0305 0.7])

@@ -115,8 +115,9 @@ end
                         labelzone = strrep(labelzone, '_', ' ');
                         plotconnectogram(fileorderconnectogram{1,R},MAT(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
                         fig = gcf;
-                        pbaspect([1 1 1])
+                        %pbaspect([1 1 1])
                         fig.WindowState = 'maximized';
+                        colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
                         savefig([savepath date '_' dat 'NegConnectSigG1G2' fac]);
                         exportgraphics(gcf,[savepath dat 'NegConnectSigG1G2' fac '.png'])
                         close
@@ -125,8 +126,13 @@ end
                         labelzone =  DATA(1,:);
                         plotconnectogramroi(fileorderconnectogram{1,R},MAT,labelzone,plotLst)
                         fig = gcf;
-                        pbaspect([1 1 1])
+                        %pbaspect([1 1 1])
                         fig.WindowState = 'maximized';
+                        if contains(dat,'roiR')
+                            colorbar('Position',[0.75 0.334 0.02 0.4],'FontSize',12)
+                        else
+                            colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                        end
                         savefig([savepath date '_' dat 'NegConnectSigG1G2' fac]);
                         exportgraphics(gcf,[savepath dat 'NegConnectSigG1G2' fac '.png'])
                         close
@@ -143,8 +149,9 @@ end
                         labelzone = strrep(labelzone, '_', ' ');
                         plotconnectogram(fileorderconnectogram{1,R},MAT(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
                         fig = gcf;
-                        pbaspect([1 1 1])
+                        %pbaspect([1 1 1])
                         fig.WindowState = 'maximized';
+                        colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
                         savefig([savepath date '_' dat 'PosConnectSigG1G2' fac]);
                         exportgraphics(gcf,[savepath dat 'PosConnectSigG1G2' fac '.png'])
                         close
@@ -153,8 +160,13 @@ end
                         labelzone =  DATA(1,:);
                         plotconnectogramroi(fileorderconnectogram{1,R},MAT,labelzone,plotLst)
                         fig = gcf;
-                        pbaspect([1 1 1])
+                        %pbaspect([1 1 1])
                         fig.WindowState = 'maximized';
+                        if contains(dat,'roiR')
+                            colorbar('Position',[0.75 0.334 0.02 0.4],'FontSize',12)
+                        else
+                            colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                        end
                         savefig([savepath date '_' dat 'PosConnectSigG1G2' fac]);
                         exportgraphics(gcf,[savepath dat 'PosConnectSigG1G2' fac '.png'])
                         close

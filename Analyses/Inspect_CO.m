@@ -1,12 +1,21 @@
 %Fichier excel avec le dossier des matrices, leur nom et le groupe
-xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses\CORRmatrice0,01_0,08\Channels\PCAPW_nocriteria\Subjectlist N=54.xlsx';
-savepath= [fileparts(xlslistfile) '\graphmatrix_fisher\'];
-if ~isfolder(savepath)
-    mkdir(savepath)
-end
+xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses\CORRmatrice0,01_0,08\PCAPW\CorrPairC0,25 ExcY\Subjectlist N=54.xlsx';
+fprintf('Computing Inspect_CO on %s\n', xlslistfile)
 
 fisher = 1;
-graph = 0;
+graph = 1;
+
+if fisher == 1
+    savepath = [fileparts(xlslistfile) '\graphmatrix_fisher\'];
+    if ~isfolder(savepath)
+        mkdir(savepath)
+    end
+elseif fisher == 0
+    savepath = [fileparts(xlslistfile) '\graphmatrix_nofisher\'];
+    if ~isfolder(savepath)
+        mkdir(savepath)
+    end
+end
 
 [~,~,ext] = fileparts([xlslistfile]);
 if strcmp(ext,'.xlsx') | strcmp(ext,'.xls')
@@ -30,7 +39,14 @@ for isubject = 2:size(xls,1)
 
     %Load the matrix
     load(fullfile(xls{isubject,1},[xls{isubject,2},'.mat']));
-    blocs(id,1) = size(matcorr,3);
+    
+    if isnan(mean(meancorr,'all','omitnan')) || isnan(mean(matcorr,'all','omitnan'))
+        fprintf('No data for %s\n',name)
+        blocs(id,1) = 0;
+        continue
+    else
+        blocs(id,1) = size(matcorr,3);
+    end
 
     %Load the zone file
     load(fullfile(xls{isubject,1}, xls{isubject,3}),'-mat');
@@ -100,11 +116,6 @@ for isubject = 2:size(xls,1)
             matcorrgood(:,:,b) = 1/2*log((1+matcorrgood(:,:,b))./(1-matcorrgood(:,:,b)));
         end
     end
-    
-    if isnan(mean(meancorr,'all','omitnan')) || isnan(mean(matcorr,'all','omitnan'))
-        fprintf('No data for %s\n',name)
-        continue
-    end
 
     labelszone = zone.label;
     for i = 1:numel(labelszone)
@@ -126,7 +137,7 @@ for isubject = 2:size(xls,1)
         set(gca,'ytick', 1:size(meancorrgood,1)); %find(idzone)
         set(gca,'yticklabel', chlist); %labelszone
         ax = gca;
-        ax.FontSize = 12;
+        ax.FontSize = 16;
         str = sprintf('%s Connectivity matrix',name);
         title(str)
         pbaspect([1 1 1])
@@ -163,7 +174,7 @@ for isubject = 2:size(xls,1)
         set(gca,'ytick', 1:size(idxneg,1)); %find(idzone)
         set(gca,'yticklabel', chlist); %labelszone
         ax = gca;
-        ax.FontSize = 12;
+        ax.FontSize = 16;
         str = sprintf('%s Negative connections',name);
         title(str)
         pbaspect([1 1 1])
@@ -200,7 +211,7 @@ for isubject = 2:size(xls,1)
         set(gca,'ytick', 1:size(matstd,1)); %find(idzone)
         set(gca,'yticklabel', chlist); %labelszone
         ax = gca;
-        ax.FontSize = 12;
+        ax.FontSize = 16;
         str = sprintf('%s Variation(STD) of connection strength between blocks',name);
         title(str)
         pbaspect([1 1 1])
@@ -222,7 +233,7 @@ for isubject = 2:size(xls,1)
         set(gca,'ytick', 1:size(matz,1)); %find(idzone)
         set(gca,'yticklabel', chlist); %labelszone
         ax = gca;
-        ax.FontSize = 12;
+        ax.FontSize = 16;
         str = sprintf('%s Distribution of the variation of connection strength between blocks',name);
         title(str)
         pbaspect([1 1 1])
@@ -257,7 +268,7 @@ if graph == 1
     set(gca,'ytick', find(idzone)); %1:size(MATmeanG1,1)
     set(gca,'yticklabel', labelszone); %chlist
     ax = gca;
-    ax.FontSize = 12;
+    ax.FontSize = 20;
     title('Mean G1 Connectivity Matrix')
     pbaspect([1 1 1])
     fig.WindowState = 'maximized';
@@ -278,7 +289,7 @@ if graph == 1
     set(gca,'ytick', find(idzone)); %1:size(MATmeanG2,1)
     set(gca,'yticklabel', labelszone); %chlist
     ax = gca;
-    ax.FontSize = 12;
+    ax.FontSize = 20;
     title('Mean G2 Connectivity Matrix')
     pbaspect([1 1 1])
     fig.WindowState = 'maximized';
@@ -299,7 +310,7 @@ if graph == 1
     set(gca,'ytick', find(idzone)); %1:size(MATmeanG1,1)
     set(gca,'yticklabel', labelszone); %chlist
     ax = gca;
-    ax.FontSize = 12;
+    ax.FontSize = 20;
     title('G1-G2 Connectivity Matrix')
     pbaspect([1 1 1])
     fig.WindowState = 'maximized';
@@ -320,7 +331,7 @@ if graph == 1
     set(gca,'ytick', find(idzone)); %find(idzone)
     set(gca,'yticklabel', labelszone); %labelszone
     ax = gca;
-    ax.FontSize = 12;
+    ax.FontSize = 20;
     str = sprintf('Mean variation(STD) of connection strength between blocks');
     title(str)
     pbaspect([1 1 1])
@@ -340,7 +351,7 @@ varall(:,1) = list_subject(I);
 varall(:,2) = num2cell(list_meanallch(I));
 
 tblblocs = array2table([blocs groupeall], 'RowNames', list_subject, 'VariableNames',{'NbBlocs', 'Group'});
-writetable(tblblocs,[savepath '\GoodBlocs.xls'],'WriteRowNames',true);
+writetable(tblblocs,[fileparts(xlslistfile) '\GoodBlocs.xls'],'WriteRowNames',true);
 
 clear fig ax cmin cmax clims
-%clear all
+clear all

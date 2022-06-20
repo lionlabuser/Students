@@ -1,7 +1,7 @@
 %%From nirs_run_chcorrMAT of LIONirs toolbox%%
 %Fichier excel avec le dossier des matrices, leur nom et le groupe
 xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\DocumentInfo\Subjectlist.xlsx';
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Inspect\';
+savepath='C:\data\Malnutrition\Resting\NIRS\Analyses\Inspect\';
 if ~isfolder(savepath)
     mkdir(savepath)
 end
@@ -12,6 +12,9 @@ if strcmp(ext,'.xlsx') | strcmp(ext,'.xls')
 elseif strcmp(ext,'.txt')
     [~, ~, xls] = readtxtfile_asxlsread([xlslistfile]);
 end
+
+[~,fname,~] = fileparts(xls(2,2));
+fprintf('Computing Inspect for %s\n',fname)
 
 NIRS = [];
 for filenb = 2:size(xls,1) %do it one by one for the associate name
@@ -85,5 +88,7 @@ for filenb = 2:size(xls,1) %do it one by one for the associate name
     clearvars id NIRSfile ML_new lst rDTP NC f
 end
 
+[~, name, ~] = fileparts(cellstr(fileparts(rDtp)));
 tbl = table(dur, pctbadch, meantimebad,'RowNames', xls(2:end,1));
-writetable(tbl,[savepath 'inspectres.xls'],'WriteRowNames',true);
+writetable(tbl,[savepath name '_inspectres.xls'],'WriteRowNames',true);
+fprintf('Results saved in %s', [savepath name '_inspectres.xls'])
