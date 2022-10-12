@@ -1,29 +1,29 @@
 %%%%%%%%%%%%%%%%%PREPARING CORR DATA FOR ANALYSIS%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 disp(['Computing PreparingDATAforAnalysis'])
-savepath='C:\data\Malnutrition\Resting\NIRS\Analyses\Stats\CORR0,01_0,08\PCAPW_nocriteria\';
+datapath='C:\data\Malnutrition\Resting\NIRS\Analyses\PartCORRmatrice0,01_0,08\PCAPW\PartCorrPairC0,25 ExcY\';
+
+%connectivity = 'CORR'; %Modify 'COH' OR 'CORR'
+xlslistfile = [datapath 'Subjectlist N=54.xlsx']; %Fichier excel avec le dossier des matrices, leur nom et le groupe
+exceltable = 'C:\data\Malnutrition\Resting\NIRS\participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
 
 fisher = 1;
-if fisher == 0
-    savepath = [savepath 'nofisher\'];
-elseif fisher == 1
-    savepath = [savepath 'fisher\'];
-end
-if ~isfolder(savepath)
-    mkdir(savepath)
-end
-
 importROI = 0; %0=import channels; 1=importROI%
 calculateROI = 1; %Calculer la connectivité moyennée par ROI (seulement possible si channels importés)
 channelmode = 1; %Faire les analyses sur les canaux
 ROImode = 1; %Faire les analyses sur les ROI
 
-%connectivity = 'CORR'; %Modify 'COH' OR 'CORR'
-xlslistfile = 'C:\data\Malnutrition\Resting\NIRS\Analyses\CORRmatrice0,01_0,08\Channels\PCAPW_nocriteria\Subjectlist N=54.xlsx'; %Fichier excel avec le dossier des matrices, leur nom et le groupe
-exceltable = 'C:\data\Malnutrition\Resting\NIRS\participants list.xlsx'; %%%% Fichier excel avec les données démographiques d'intérêt
+if fisher == 0
+    savepath = fullfile(datapath, 'nofisher', filesep);
+elseif fisher == 1
+    savepath = fullfile(datapath, 'fisher', filesep);
+end
+if ~isfolder(savepath)
+    mkdir(savepath)
+end
 
 %%%%%% from StatMatrices of LIONIRS toolbox%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-disp(['Loading the data from ' fileparts(xlslistfile)])
+disp(['Loading the data from ' datapath])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %Load the excel file in array info%%
@@ -289,13 +289,15 @@ if ROImode
             zone.label = zone.label';
         else
         end
+        
+        lgndroi = {'Roi';'r'};
 
         %extraire la zone des données de connectivité importées
         roi = [zone.label; zone.plotLst]; 
 
         %%Créer une liste des labels de zones 
         for r = 1:numel(roi(1,:))
-            Listroi{r} = ['R' num2str(r)];
+            Listroi{r} = [lgndroi{2,1} num2str(r)]; %['R' num2str(r)];
         end
         roi = [roi; Listroi];
         Listroi = string(Listroi);
@@ -530,6 +532,7 @@ elseif importROI == 1
 end
 
 %% Moyennes pour graph
+if channelmode
 %données de FC séparée par groupe
 datachG1 = datach(idG1,:);
 datachG2 = datach(idG2,:);
@@ -537,6 +540,7 @@ datameanchG1 = mean(datachG1,'omitnan');
 datameanchG2 = mean(datachG2,'omitnan');
 datachG1G2 = datameanchG1 - datameanchG2;
 %datachG2G1 = datameanchG2 - datameanchG1;
+end
 
 if calculateROI == 1
     for R = 1:numel(roi)
@@ -565,10 +569,10 @@ if importROI == 1
     %données de FC séparée par groupe
     dataroiG1 = dataroiALL(idG1,:);
     dataroiG2 = dataroiALL(idG2,:);
-    datameanroiG1 = nanmean(dataroiG1);
-    datameanroiG2 = nanmean(dataroiG2);
+    datameanroiG1 = mean(dataroiG1,'omitnan');
+    datameanroiG2 = mean(dataroiG2,'omitnan');
     dataroiG1G2 = datameanroiG1 - datameanroiG2;
-    dataroiG2G1 = datameanroiG2 - datameanroiG1;
+    %dataroiG2G1 = datameanroiG2 - datameanroiG1;
 end
 
 save([savepath 'workspace.mat'])
@@ -579,3 +583,8 @@ disp(X)
 clear all
 
 toc
+
+%%% RUN EVERYTHING
+% run('PreparingDATAforAnalysis_CO.m')
+% run('GetToKnowYourDATA.m')
+% run('ANCOVA_CO.m')

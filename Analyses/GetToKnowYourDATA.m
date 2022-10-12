@@ -1,11 +1,11 @@
 %%%%%%%%%%%%%%GetToKnowYourDATA%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses\Stats\CORR0,01_0,08\PCAPW_nocriteria\fisher\';
-load ([datapath 'workspace.mat'])
+savepathi = 'C:\data\Malnutrition\Resting\NIRS\Analyses\CORRmatrice0,01_0,08\PCAPW\CorrPairC0,1 ExcY\nofisher\';
+load ([savepathi 'workspace.mat'])
 %load ([datapath 'workspacemat.mat'])
 
-disp(['Computing GetToKnowYourDATA on ' datapath])
+disp(['Computing GetToKnowYourDATA on ' savepathi])
 
 fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Mixte.txt',...
                          'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Region.txt',...
