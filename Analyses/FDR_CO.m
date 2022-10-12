@@ -1,6 +1,10 @@
-function FDR_CO(pval, labelfactors, labels, p, dat, savepath)
+function FDR_CO(pval, labelfactors, labeldim, dat, p, savepath)
 
 sz = size(pval);
+if numel(sz) == 3
+    label = repmat(labeldim{1,1},1,sz(2));
+end
+
     for f = 1:numel(labelfactors)
         % FDR according to Storey 2002%%% %BAD ONE
 %         [fdr,q] = mafdr(pval(f,:)');
@@ -10,21 +14,20 @@ sz = size(pval);
         % FDR according to Benjamini & Hochberg(1995) de Groppe%%%%
         [h1, crit_p, adj_ci_cvrg, adj_p] = fdr_bh(pval(f,:), 0.05, 'pdep', 'no' );
         n_sig = sum(adj_p(1,:) <= p);
-        fprintf('%d %s effects are significant p<=%.2f using FDR correction (Benjamini1995) for %s\n',n_sig,labelfactors{f,1}, p, dat)
+        fprintf('\t \t \t %d %s effects are significant p<=%.2f using FDR correction (Benjamini1995) for %s\n',n_sig,labelfactors{f}, p, dat)
 
         if numel(sz) == 2
             if n_sig >= 1
                 isig = find(adj_p(1,:) <= p);
                 for e = 1:numel(isig)
-                    fprintf('\t Significant effect: p=%.3f for %s\n', adj_p(1,isig(e)),['c' num2str(labels{1,isig(e)})])
+                    fprintf('\t \t \t \t Significant effect: p=%.3f for %s\n', adj_p(1,isig(e)),labeldim{1,isig(e)})
                 end
             end
         elseif numel(sz) == 3
-            labels = repmat(labels,1,sz(2));
             if n_sig >= 1
                 isig = find(adj_p(1,:) <= p);
                 for e = 1:numel(isig)
-                    fprintf('\t Significant effect: p=%.3f for %s\n', adj_p(1,isig(e)),['c' num2str(labels{1,isig(e)})])
+                    fprintf('\t \t \t \t Significant effect: p=%.3f for %s\n', adj_p(1,isig(e)),[labeldim{2,1}{1,(ceil(isig(e)/(sz(3)+1)))} label{1,isig(e)}])
                 end
             end
         end

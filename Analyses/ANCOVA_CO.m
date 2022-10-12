@@ -1,368 +1,254 @@
 %%%%%%%%%%%%%%ANCOVA%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
-    
-datapath = 'C:\data\Malnutrition\Resting\NIRS\Analyses\Stats\CORR0,01_0,08\PCAPW\CorrPairC0,25 ExcY\nofisher\';
-load ([datapath 'workspace.mat'])
-%load ([datapath 'workspacemat.mat'])
 
-disp(['Computing ANCOVA on ' datapath])
+savepathi = 'C:\data\Malnutrition\Resting\NIRS\Analyses\CORR0,01_0,08\PCAPW\CorrPairC0,1 ExcY\fisher\';
+load ([savepathi 'workspace.mat'])
+%load ([savepath 'workspacemat.mat'])
 
-savepathinitial = fullfile(fileparts(datapath), filesep, 'ANCOVA', filesep);
-if ~isfolder(savepathinitial)
-    mkdir(savepathinitial)
-end
+disp(['Computing ANCOVA on ' savepathi])
+
+%% PARAMETERS TO MODIFY %%%%%
 channelmode = 1;
 importedROImode = 0;
 calculatedROImode = 1;
-
 graphmode = 1;
 fdrmode = 1;
-nointeractionmode = 1;
+nointeractionmode = 0;
 interactionmode = 1;
+savemode = 1;
+
 p = 0.05;
+factors = {gr,ses};
+labelfactors = {'Group','SES'};
+labeldatai = {'Pearson Correlation'};
 
 fileorderconnectogram = {'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Mixte.txt',...
     'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Region.txt',...
     'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Fonction.txt',...
     'C:\data\Malnutrition\Resting\NIRS\Analyses\Connectogram_Aire.txt'};
+%%END MODIFY %%%%%%%%%%%%%
 
-
-%%
-%%ANCOVA SANS INTERACTION%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ANCOVA SANS INTERACTION%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if nointeractionmode == 1
     disp('Computing ANCOVA without interaction')
-    savepath = [savepathinitial 'NoInteraction\'];
+
+    type = 'main';
+    savepath = fullfile(savepathi, ['ANOVA' type],filesep);
     if ~isfolder(savepath)
         mkdir(savepath)
     end
 
-    %%CHANNELS%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    savepathgraph = fullfile(savepath,'Graphs',filesep);
+    if ~isfolder(savepathgraph)
+        mkdir(savepathgraph)
+    end
+    %% CHANNELS%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     if channelmode ==1
-        dat = lgndch{1,:};
 
         %%ANOVA%%%%%%%%%%%%%%%%%%%
-        x = 1;
-        resch = [];
-        pvalch = [];
-        for r = 1:(width(tblch)- 5)
-            [pvalch(:,x),res] = anovan(table2array(tblch(:,r+5)),{gr,ses},'Continuous',2,'varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,4,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resch{1,x} = tblres; %[resch, tblres];
-            x = x + 1;
+        labeldim = labelch;
+        labeldata = [labeldatai; lgndch{1,:}];
+        [tblpvalch, tblresch, slopes] = ANOVA_job(type, table2array(tblch(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+        %
+        %         [~,atab,ctab,stats] = aoctool(ses,table2array(tblch(:,7)),gr,0.05,'SES','Connectivity','Group','on','separate lines');
+        %         [c,m] = multcompare(stats,'Estimate','slope');
+        %         [c,m] = multcompare(stats,'Estimate','pmm');
+        %         [c,m] = multcompare(stats,'Estimate','intercept');
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalch, p, labeldata, MATallG1G2, ...
+                DATA, fileorderconnectogram{1,1}, savepathgraph, ListChinv, slopes);
         end
-        clear x r res idx resc tblres
-        % delete(findall(0));
-
-        %       [~,atab,ctab,stats] = aoctool(ses,table2array(tblch(:,7)),gr,0.05,'SES','Connectivity','Group','on','separate lines');
-        %       [c,m] = multcompare(stats,'Estimate','slope');
-        %       [c,m] = multcompare(stats,'Estimate','pmm');
-        %       [c,m] = multcompare(stats,'Estimate','intercept');
-
-        labelfactors = resch{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalch(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for channels\n',n_sig,labelfactors{f,1}, p)
-        end
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalch, labelfactors, labelch, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resch, pvalch, labelfactors, p, dat, lgndch, ...
-            labelch, MATallG1G2, datameanchG1, datameanchG2, DATA, fileorderconnectogram, ...
-            savepath, graphmode, ListChinv);
     end
 
-    if importedROImode
-        dat = lgndch{1,:};
-        R = 1;
+    if importedROImode %%not tested
         %%ANOVA%%%%%%%%%%%%%%%%%%%
-        x = 1;
-        resroi = [];
-        for r = 1:(width(tblroi)- 5)
-            [pvalroi(:,x),res] = anovan(table2array(tblroi(:,r+5)),{gr,ses},'Continuous',2,'varnames',{'Group','SES'});
-            close hidden;
-            resroi = [resroi, res];
-            x = x + 1;
-        end
-        % delete(findall(0));
+        labeldim = labelroi;
+        labeldata = [labeldatai; lgndroi{1,:}];
+        [tblpvalroi, tblresroi, slopes] = ANOVA_job(type, table2array(tblroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
 
-        labelfactors = resroi(2:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for ROIs\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalroi, labelfactors, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        if graphmode == 1
-            %[~,~,~,~,~,~] = Tablegraph_CO(resroi, pvalroi, p, dat, lgndroi, labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, roi{1,R}, fileorderconnectogram, savepath);
-
-            tblresroi = array2table(resroi);
-            for r = 1:(width(tblroi)- 5)
-                tblresroi = mergevars(tblresroi,(r:r+6));
-            end
-            tblresroi.Properties.VariableNames = labelroi;
-            tblresroi.Properties.RowNames = {'Source','Group','SES','Error','Total'};
-
-            tblproi = array2table(pvalroi);
-            tblproi.Properties.VariableNames = labelroi;
-            tblproi.Properties.RowNames = {'Group','SES'};
-
-            sig = tblproi.Variables <= p;
-            tblpsigroi = tblproi(:,any(sig));
-            tblsigroi = tblresroi(:,tblpsigroi.Properties.VariableNames);
-
-            grsig = tblproi{{'Group'},:} <= p;
-            tblgrpsigroi = tblproi(1,grsig);
-            tblgrsigroi = tblresroi(:, tblgrpsigroi.Properties.VariableNames);
-
-            disp(tblgrpsigroi)
-
-            %writetable(tblsigroi,[savepath date '_sigresultsroi.xls']); trop gros
-            writetable(tblpsigroi,[savepath date '_psigresultsroi.xls'],'WriteRowNames',true);
-            %writetable(tblgrsigroi,[savepath date '_grsigresultsroi.xls']);
-            save([savepath date '_resultsroi.mat'],'tblresroi','tblproi','tblpsigroi','tblsigroi','tblgrpsigroi','tblgrsigroi');
-
-            clear r
-
-            %%%% graphique%%%%%%%%%%%%%%%%%%%%
-            if find(grsig)
-                figure
-                A = meanG1roi(:,grsig);
-                B = meanG2roi(:,grsig);
-                C = [A' B'];
-                X = categorical(tblgrpsigroi.Properties.VariableNames);
-                p1 = bar(X,C);
-                p1(1).FaceColor = 'r';
-                p1(2).FaceColor = 'b';
-                ylabel('Pearson correlation');
-                savefig([savepath date '_SigROI']);
-                exportgraphics(gcf,[savepath 'SigROI.png'])
-
-            else
-            end
-
-            clear A B C X p1 sig grsig
-
-            %%%% Connectogramme%%%%%%%%%%%%
-            %meanG2G1roi = meanG2roi-meanG1roi; %Calculer matrice G2-G1
-            meanG1G2roi = meanG1roi-meanG2roi; %Calculer matrice G1-G2
-
-            for r = 1:numel(roi(2,:))
-                for rr = (r + 1):numel(roi(2,:))
-                    x = ['R' num2str(r) '-' 'R' num2str(rr)];
-                    tf = strcmp(x, labelroiALL(1,:));
-                    idx = find(tf);
-                    MATmeanG1G2roi(r,rr) = meanG1G2roi(1,idx); %Mettre les  données sous forme de matrice
-                end
-            end
-            MATmeanG1G2roi(length(MATmeanG1G2roi),length(MATmeanG1G2roi)) = 0; %Ajouter le dernier 0 de la diagonale
-            MATmeanG1G2roi = MATmeanG1G2roi + triu(MATmeanG1G2roi,1)'; %Répliquer la moitié inférieure de la matrice
-
-            for r = 1:numel(roi(2,:))
-                for rr = (r + 1):numel(roi(2,:))
-                    x = ['R' num2str(r) '-' 'R' num2str(rr)];
-                    tf = strcmp(x, labelroiALL(1,:));
-                    idx = find(tf);
-                    MATproi(r,rr)= pvalroi(1,idx); %Mettre les  p sous forme de matrice
-                end
-            end
-
-            MATproi(length(MATproi),length(MATproi)) = 0; %Ajouter le dernier 0 de la diagonale
-            MATproi = MATproi + triu(MATproi,1)'; %Répliquer la moitié inférieure de la matrice
-            tf = MATproi <=p & MATproi > 0; %Identifier les p significatifs
-            MATsigG1G2roi = MATmeanG1G2roi; %Reprendre la matrice de connectivité du ROI
-            MATsigG1G2roi(~tf) = 0; % Retirer les valeurs non sig
-
-            clear r rr x tf idx
-
-            MATneg = MATsigG1G2roi < 0;
-            MAT = MATsigG1G2roi.*(MATneg);%DATA{id}.MAT %loader matrice
-            if find(MAT)
-                plotLst = roi(2,:);
-                label =  roi(1,:);
-                plotconnectogramroi(fileorderconnectogram,MAT,label,plotLst)
-                savefig([savepath date '_NegConnectSigG1G2ROI']);
-            else
-            end
-
-            MATpos = MATsigG1G2roi > 0;
-            MAT = MATsigG1G2roi.*(MATpos);%DATA{id}.MAT %loader matrice
-            if find(MAT)
-                plotLst = roi(2,:);
-                label =  roi(1,:);
-                plotconnectogramroi(fileorderconnectogram,MAT,label,plotLst)
-                savefig([savepath date '_PosConnectSigG1G2ROI']);
-            else
-            end
-
-            clear r x res sig A B C X p1
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalroi, p, labeldata, MATallG1G2, ...
+                DATA, fileorderconnectogram{1,1}, savepathgraph, ListChinv, slopes);
         end
     end
 
     if calculatedROImode
-        %%MROI%%%%%%%%%%%%%%%%%%%%%%%
-        %%ANOVA%%%%%%%%%%%%%%%%%%%
+        %% MROI%%%%%%%%%%%%%%%%%%%%%%%
+        %ANOVA%%%%%%%%%%%%%%%%%%%
         R = 1;
-        dat = lgndroi{1,R};
-        x = 1;
-        resMroi = [];
-        pvalMroi = [];
-        for r = 1:(width(tbldataMroi)- 5)
-            [pvalMroi(:,x),res] = anovan(table2array(tbldataMroi(:,r+5)),{gr,ses},'Continuous',2,'varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,4,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resMroi{1,x} = tblres; %[resch, tblres];
-            x = x + 1;
-        end
-        clear x r res idx resc tblres
-        % delete(findall(0));
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
+        [tblpvalMroi, tblresMroi, slopes] = ANOVA_job(type, table2array(tbldataMroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
 
-        labelfactors = resMroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalMroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Mroi\n',n_sig,labelfactors{f,1}, p)
-        end
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalMroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalMroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
         end
 
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resMroi, pvalMroi, labelfactors, p, dat, lgndroi,...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R},...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %%RROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %% RROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%ANOVA%%%%%%%%%%%%%%%%%%%
         R = 2;
-        dat = lgndroi{1,R};
-        x = 1;
-        resRroi = [];
-        pvalRroi = [];
-        for r = 1:(width(tbldataRroi)- 5)
-            [pvalRroi(:,x),res] = anovan(table2array(tbldataRroi(:,r+5)),{gr,ses},'Continuous',2,'varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,4,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resRroi{1,x} = tblres; %[resch, tblres];
-            x = x + 1;
-        end
-        clear x r res idx resc tblres
-        % delete(findall(0));
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
 
-        labelfactors = resRroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalRroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Rrois\n',n_sig,labelfactors{f,1}, p)
-        end
-        clear r x res n_sig
+        [tblpvalRroi, tblresRroi, slopes] = ANOVA_job(type, table2array(tbldataRroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
 
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalRroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalRroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
         end
 
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resRroi, pvalRroi, labelfactors, p, dat, ...
-            lgndroi, labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, ...
-            datameanroiG2{1,R}, roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %%FROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %% FROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%ANOVA%%%%%%%%%%%%%%%%%%%
         R = 3;
-        dat = lgndroi{1,R};
-        x = 1;
-        resFroi = [];
-        pvalFroi = [];
-        for r = 1:(width(tbldataFroi)- 5)
-            [pvalFroi(:,x),res] = anovan(table2array(tbldataFroi(:,r+5)),{gr,ses},'Continuous',2,'varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,4,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resFroi{1,x} = tblres;
-            x = x + 1;
-        end
-        clear x r res idx resc tblres
-        % delete(findall(0));
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
 
-        labelfactors = resFroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalFroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Froi\n',n_sig,labelfactors{f,1}, p)
-        end
-        clear r x res n_sig
+        [tblpvalFroi, tblresFroi, slopes] = ANOVA_job(type, table2array(tbldataFroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
 
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalFroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalFroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
         end
 
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resFroi, pvalFroi, labelfactors, p, dat, lgndroi, ...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, ...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %%AROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %% AROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%ANOVA%%%%%%%%%%%%%%%%%%%
         R = 4;
-        dat = lgndroi{1,R};
-        x = 1;
-        resAroi = [];
-        pvalAroi = [];
-        for r = 1:(width(tbldataAroi)- 5)
-            [pvalAroi(:,x),res] = anovan(table2array(tbldataAroi(:,r+5)),{gr,ses},'Continuous',2,'varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,4,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resAroi{1,x} = tblres;
-            x = x + 1;
-        end
-        clear x r res idx resc tblres
-        % delete(findall(0));
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
 
-        labelfactors = resAroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalAroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Aroi\n',n_sig,labelfactors{f,1}, p)
+        [tblpvalAroi, tblresAroi, slopes] = ANOVA_job(type, table2array(tbldataAroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalAroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
         end
 
-        clear r x res n_sig
+        %         if graphmode == 1
+        %             tblgrpsigALL = [tblgrpsigMroi, tblgrpsigRroi, tblgrpsigFroi, tblgrpsigAroi];
+        %             writetable(tblgrpsigALL,[savepath date '_grpsigresultsALL.xls'],'WriteRowNames',true);
+        %         end
+    end
+    fprintf('Results saved in %s\n', savepath)
 
-        %%%%fdr%%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalAroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
+    %clearvars -except factors labelfactors labeldatai savepathi channelmode importedROImode calculatedROImode graphmode fileorderconnectogram fdrmode nointeractionmode interactionmode p
+    %load ([savepathi 'workspace.mat'])
+    %load ([savepathi 'workspacemat.mat'])
+
+end
+
+%% ANCOVA AVEC INTERACTION%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if interactionmode == 1
+    disp('Computing ANCOVA with interaction')
+
+    type = 'inter';
+    savepath = fullfile(savepathi, ['ANOVA' type],filesep);
+    if ~isfolder(savepath)
+        mkdir(savepath)
+    end
+
+    savepathgraph = fullfile(savepath,'Graphs',filesep);
+    if ~isfolder(savepathgraph)
+        mkdir(savepathgraph)
+    end
+    %% CHANNELS%%%%%%%%%%%%%%%%%%%%%
+    if channelmode ==1
+        labeldim = labelch; %'1-2','1-3','1-4'...
+        labeldata = [labeldatai; lgndch{1,:}]; %'Ch'
+        [tblpvalch, tblresch, slopes] = ANOVA_job(type, table2array(tblch(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalch, p, labeldata, MATallG1G2, ...
+                DATA, fileorderconnectogram{1,1}, savepathgraph, ListChinv, slopes);
+        end
+    end
+
+    if importedROImode %%not tested
+        %%ANOVA%%%%%%%%%%%%%%%%%%%
+        labeldim = labelroi;
+        labeldata = [labeldatai; lgndroi{1,:}];
+        [tblpvalroi, tblresroi, slopes] = ANOVA_job(type, table2array(tblroi(:,6:end)), factors,...
+            labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalroi, p, labeldata, MATallG1G2, ...
+                DATA, fileorderconnectogram{1,1}, savepathgraph, ListChinv, slopes);
+        end
+    end
+
+    if calculatedROImode
+
+        %% MROI%%%%%%%%%%%%%%%%%%%%%%%
+        R = 1;
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
+
+        [tblpvalMroi, tblresMroi, slopes] = ANOVA_job(type, table2array(tbldataMroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalMroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
         end
 
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resAroi, pvalAroi, labelfactors, p, dat, lgndroi, ...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, ...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
+        %% RROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        R = 2;
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
+
+        [tblpvalRroi, tblresRroi, slopes] = ANOVA_job(type, table2array(tbldataRroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalRroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
+        end
+
+        %% FROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        R = 3;
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
+
+        [tblpvalFroi, tblresFroi, slopes] = ANOVA_job(type, table2array(tbldataFroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalFroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
+        end
+
+        %% AROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        R = 4;
+        labeldim = labelroiALL{1,R};
+        labeldata = [labeldatai; lgndroi{1,R}];
+
+        [tblpvalAroi, tblresAroi, slopes] = ANOVA_job(type, table2array(tbldataAroi(:,6:end)),...
+            factors, labelfactors, p, labeldata, labeldim, fdrmode, graphmode, savepath, savemode);
+
+        %%Graph des résultats%%%%%%%%%%%%%%%%
+        if graphmode
+            ANCOVAGraph_CO(tblpvalAroi, p, labeldata, MATroiG1G2{1,R}, ...
+                roi{1,R}, fileorderconnectogram{1,R}, savepathgraph, slopes);
+        end
 
         %         if graphmode == 1
         %             tblgrpsigALL = [tblgrpsigMroi, tblgrpsigRroi, tblgrpsigFroi, tblgrpsigAroi];
@@ -371,363 +257,203 @@ if nointeractionmode == 1
     end
     fprintf('Results saved in %s\n', savepath)
 end
-
-clearvars -except datapath savepathinitial channelmode importedROImode calculatedROImode graphmode fileorderconnectogram fdrmode nointeractionmode interactionmode p
-load ([datapath 'workspace.mat'])
-load ([datapath 'workspacemat.mat'])
-%savepathinitial='C:\data\Malnutrition\Resting\NIRS\Analyses préliminaires\Stats\CORR0,01_0,08\PhysioSatRespEKG\ANCOVA\';
-if ~isfolder(savepathinitial)
-    mkdir(savepathinitial)
-end
-
-%%
-%ANCOVA AVEC INTERACTION%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if interactionmode == 1
-    disp('Computing ANCOVA with interaction')
-    savepath = [savepathinitial 'Interaction\'];
-    if ~isfolder(savepath)
-        mkdir(savepath)
-    end
-
-    %%CHANNELS%%%%%%%%%%%%%%%%%%%%%
-    if channelmode ==1
-        dat = lgndch{1,:};
-        x = 1;
-        resch = [];
-        pvalch = [];
-        for r = 1:(width(tblch)- 5)
-            [pvalch(:,x),res] = anovan(table2array(tblch(:,r+5)),{gr,ses},'Continuous',2,'model','interaction','varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,5,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resch{1,x} = tblres;
-            x = x + 1;
-        end
-
-        clear x r res idx resc tblres
-        % delete(findall(0));
-
-        labelfactors = resch{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalch(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for channels\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalch, labelfactors, labelch, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resch, pvalch, labelfactors, p, dat, lgndch, ...
-            labelch, MATallG1G2, datameanchG1, datameanchG2, DATA, fileorderconnectogram, ...
-            savepath, graphmode, ListChinv);
-    end
-
-    if importedROImode
-        dat = lgndch{1,:};
-        R = 1;
-        %%ANOVA%%%%%%%%%%%%%%%%%%%
-        x = 1;
-        resroi = [];
-        for r = 1:(width(tblroi)- 5)
-            [pvalroi(:,x),res] = anovan(table2array(tblroi(:,r+5)),{gr,ses},'Continuous',2,'model','interaction','varnames',{'Group','SES'});
-            close hidden;
-            resroi = [resroi, res];
-            x = x + 1;
-        end
-        % delete(findall(0));
-
-        labelfactors = resroi(2:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for ROIs\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalroi, labelfactors, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        if graphmode == 1
-            %[~,~,~,~,~,~] = Tablegraph_CO(resroi, pvalroi, p, dat, lgndroi, labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, roi{1,R}, fileorderconnectogram, savepath);
-
-            tblresroi = array2table(resroi);
-            for r = 1:(width(tblroi)- 5)
-                tblresroi = mergevars(tblresroi,(r:r+6));
-            end
-            tblresroi.Properties.VariableNames = labelroiALL;
-            tblresroi.Properties.RowNames = {'Source','Group','SES','Group*SES','Error','Total'};
-
-            tblproi = array2table(pvalroi);
-            tblproi.Properties.VariableNames = labelroiALL;
-            tblproi.Properties.RowNames = {'Group','SES','Group*SES'};
-
-            sig = tblproi.Variables <= p;
-            tblpsigroi = tblproi(:,any(sig));
-            tblsigroi = tblresroi(:,tblpsigroi.Properties.VariableNames);
-
-            grsig = tblproi{{'Group'},:} <= p;
-            tblgrpsigroi = tblproi(1,grsig);
-            tblgrsigroi = tblresroi(:, tblgrpsigroi.Properties.VariableNames);
-
-            disp(tblgrpsigroi)
-
-            grsessig = tblproi{{'Group*SES'},:} <= p;
-            tblgrsespsigroi = tblproi(3,grsessig);
-            tblgrsessigroi = tblresroi(:, tblgrsespsigroi.Properties.VariableNames);
-
-            disp(tblgrsespsigroi)
-
-            %writetable(tblsigroi,[savepath date '_sigresultsroi.xls']); trop gros
-            writetable(tblpsigroi,[savepath date '_psigresultsroi.xls'],'WriteRowNames',true);
-            %writetable(tblgrsigroi,[savepath date '_grsigresultsroi.xls']);
-            save([savepath date '_resultsroi.mat'],'tblresroi','tblproi','tblpsigroi','tblsigroi','tblgrpsigroi','tblgrsigroi');
-
-            clear r
-
-            %%%% graphique%%%%%%%%%%%%%%%%%%%%
-            if find(grsig)
-                figure
-                A = meanG1roi(:,grsig);
-                B = meanG2roi(:,grsig);
-                C = [A' B'];
-                X = categorical(tblgrpsigroi.Properties.VariableNames);
-                p1 = bar(X,C);
-                p1(1).FaceColor = 'r';
-                p1(2).FaceColor = 'b';
-                ylabel('Pearson correlation');
-                savefig([savepath date '_SigROI']);
-                exportgraphics(gcf,[savepath 'SigROI.png'])
-
-            else
-            end
-
-            clear A B C X p1 sig grsig
-
-            %%%% Connectogramme%%%%%%%%%%%%
-            %meanG2G1roi = meanG2roi-meanG1roi; %Calculer matrice G2-G1
-            meanG1G2roi = meanG1roi-meanG2roi; %Calculer matrice G1-G2
-
-            for r = 1:numel(roi(2,:))
-                for rr = (r + 1):numel(roi(2,:))
-                    x = ['R' num2str(r) '-' 'R' num2str(rr)];
-                    tf = strcmp(x, labelroiALL(1,:));
-                    idx = find(tf);
-                    MATmeanG1G2roi(r,rr) = meanG1G2roi(1,idx); %Mettre les  données sous forme de matrice
-                end
-            end
-            MATmeanG1G2roi(length(MATmeanG1G2roi),length(MATmeanG1G2roi)) = 0; %Ajouter le dernier 0 de la diagonale
-            MATmeanG1G2roi = MATmeanG1G2roi + triu(MATmeanG1G2roi,1)'; %Répliquer la moitié inférieure de la matrice
-
-            for r = 1:numel(roi(2,:))
-                for rr = (r + 1):numel(roi(2,:))
-                    x = ['R' num2str(r) '-' 'R' num2str(rr)];
-                    tf = strcmp(x, labelroiALL(1,:));
-                    idx = find(tf);
-                    MATproi(r,rr)= pvalroi(1,idx); %Mettre les  p sous forme de matrice
-                end
-            end
-
-            MATproi(length(MATproi),length(MATproi)) = 0; %Ajouter le dernier 0 de la diagonale
-            MATproi = MATproi + triu(MATproi,1)'; %Répliquer la moitié inférieure de la matrice
-            tf = MATproi <=p & MATproi > 0; %Identifier les p significatifs
-            MATsigG1G2roi = MATmeanG1G2roi; %Reprendre la matrice de connectivité du ROI
-            MATsigG1G2roi(~tf) = 0; % Retirer les valeurs non sig
-
-            clear r rr x tf idx
-
-            MATneg = MATsigG1G2roi < 0;
-            MAT = MATsigG1G2roi.*(MATneg);%DATA{id}.MAT %loader matrice
-            if find(MAT)
-                plotLst = roi(2,:);
-                label =  roi(1,:);
-                plotconnectogramroi(fileorderconnectogram,MAT,label,plotLst)
-                savefig([savepath date '_NegConnectSigG1G2ROI']);
-            else
-            end
-
-            MATpos = MATsigG1G2roi > 0;
-            MAT = MATsigG1G2roi.*(MATpos);%DATA{id}.MAT %loader matrice
-            if find(MAT)
-                plotLst = roi(2,:);
-                label =  roi(1,:);
-                plotconnectogramroi(fileorderconnectogram,MAT,label,plotLst)
-                savefig([savepath date '_PosConnectSigG1G2ROI']);
-            else
-            end
-
-        end
-        clear r x res sig A B C X p1
-    end
-
-    if calculatedROImode
-
-        %%MROI%%%%%%%%%%%%%%%%%%%%%%%
-        R = 1;
-        dat = lgndroi{1,R};
-        x = 1;
-        resMroi = [];
-        pvalMroi = [];
-        for r = 1:(width(tbldataMroi)- 5)
-            [pvalMroi(:,x),res] = anovan(table2array(tbldataMroi(:,r+5)),{gr,ses},'Continuous',2,'model','interaction','varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,5,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resMroi{1,x} = tblres; %[resMroi, tblres];
-            x = x + 1;
-        end
-
-        clear x r res idx resc tblres
-        % delete(findall(0));
-
-        labelfactors = resMroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalMroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Mroi\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalMroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resMroi, pvalMroi, labelfactors, p, dat, lgndroi, ...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, ...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %%RROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        R = 2;
-        dat = lgndroi{1,R};
-        x = 1;
-        resRroi = [];
-        pvalRroi = [];
-        for r = 1:(width(tbldataRroi)- 5)
-            [pvalRroi(:,x),res] = anovan(table2array(tbldataRroi(:,r+5)),{gr,ses},'Continuous',2,'model','interaction','varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,5,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resRroi{1,x} = tblres;
-            x = x + 1;
-        end
-
-        clear x r res idx resc tblres
-        % delete(findall(0));
-
-        labelfactors = resRroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalRroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Rroi\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalRroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resRroi, pvalRroi, labelfactors, p, dat, lgndroi, ...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, ...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %%FROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        R = 3;
-        dat = lgndroi{1,R};
-        x = 1;
-        resFroi = [];
-        pvalFroi = [];
-        for r = 1:(width(tbldataFroi)- 5)
-            [pvalFroi(:,x),res] = anovan(table2array(tbldataFroi(:,r+5)),{gr,ses},'Continuous',2,'model','interaction','varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,5,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resFroi{1,x} = tblres;
-            x = x + 1;
-        end
-
-        clear x r res idx resc tblres
-        % delete(findall(0));
-
-        labelfactors = resFroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalFroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Froi\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%fdr%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalFroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resFroi, pvalFroi, labelfactors, p, dat, lgndroi, ...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, ...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %%AROI%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        R = 4;
-        dat = lgndroi{1,R};
-        x = 1;
-        resAroi = [];
-        pvalAroi = [];
-        for r = 1:(width(tbldataAroi)- 5)
-            [pvalAroi(:,x),res] = anovan(table2array(tbldataAroi(:,r+5)),{gr,ses},'Continuous',2,'model','interaction','varnames',{'Group','SES'});
-            close hidden;
-            resc = res(2:end,2:end);
-            idx = find(cellfun(@isempty,resc));
-            resc(idx) = {[0]};
-            tblres = array2table(cell2mat(reshape(resc,5,6)),'RowNames',res(2:end,1),'VariableNames',res(1,2:end));
-            resAroi{1,x} = tblres;
-            x = x + 1;
-        end
-
-        clear x r res idx resc tblres
-        % delete(findall(0));
-
-        labelfactors = resAroi{1,1}.Properties.RowNames(1:end-2,1);
-        for f = 1:numel(labelfactors)
-            n_sig = sum(pvalAroi(f,:) <= p);
-            fprintf('%d %s effects are significant p<=%.2f without correction for Aroi\n',n_sig,labelfactors{f,1}, p)
-        end
-
-        clear r x res n_sig
-
-        %%%%fdr%%%%%%%%%%%%%
-        if fdrmode == 1
-            FDR_CO(pvalAroi, labelfactors, labelroiALL{1,R}, p, dat, savepath)
-        end
-
-        %%tableaux des résultats%%%%%%%%%%%%%%%%
-        [~,~,~,~,~,~] = Tablegraph_CO(resAroi, pvalAroi, labelfactors, p, dat, lgndroi, ...
-            labelroiALL{1,R}, MATroiG1G2{1,R}, datameanroiG1{1,R}, datameanroiG2{1,R}, ...
-            roi{1,R}, fileorderconnectogram, savepath, graphmode);
-
-        %         if graphmode == 1
-        %             tblgrpsigALL = [tblgrpsigMroi, tblgrpsigRroi, tblgrpsigFroi, tblgrpsigAroi];
-        %             writetable(tblgrpsigALL,[savepath date '_grpsigresultsALL.xls'],'WriteRowNames',true);
-        %         end
-    end
-fprintf('Results saved in %s\n', savepath)
-end
 clear
 toc
+
+%%%%%%%%%%%% FUNCTIONS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function ANCOVAGraph_CO(tblpval, p, labeldata, MATmeandiff, ...
+    DATA, fileorderconnectogram, savepath, varargin)
+
+if ~isempty(varargin)
+    if numel(varargin) == 2
+        slopes = varargin{2};
+    elseif numel(varargin) == 1
+        slopes = varargin{1};
+    end
+end
+
+labelrows = tblpval.Row;
+sig = tblpval{:,:} <= p;
+if any(sig,'all')
+
+    for f = 1:numel(labelrows)
+        fac = labelrows{f,1};
+        if contains(fac,'*')
+            fac = erase(fac,'*');
+        elseif contains(fac,':')
+            fac = erase(fac,':');
+        end
+
+        sig = tblpval{f,:} <= p;
+        if any(sig,'all')
+
+            %%%% Connectogramme%%%%%%%%%%%%
+            if strcmp(fac,'Group')
+                MATpval = zeros(length(MATmeandiff));
+                x = 1;
+                for c = 1:length(MATmeandiff)
+                    for cc =(c + 1):length(MATmeandiff)
+                        MATpval(c,cc) = tblpval{f,x}; %Mettre les  p sous forme de matrice
+                        x = x + 1;
+                    end
+                end
+
+                MATpval(length(MATpval),length(MATpval)) = 0; %Mettre la dernière donnée sur la diagonale à 0
+                MATpval = MATpval + triu(MATpval,1)'; %rendre la matrice symétrique
+                tf = MATpval <=p & MATpval > 0; %trouver les p significatif
+                MATsig = MATmeandiff;
+                MATsig(~tf) = 0; %extraire juste les connexions significatives
+                clear c cc x tf
+
+                sign = {'Neg'; 'Pos'};
+                for s = 1:numel(sign)
+                    if strcmp('Neg',sign{s})
+                        MATneg = MATsig < 0; %negative differences
+                        MAT = MATsig.*(MATneg); %DATA{id}.MAT %loader matrice
+                    elseif strcmp('Pos',sign{s})
+                        MATpos = MATsig > 0; %positive differences
+                        MAT = MATsig.*(MATpos);%DATA{id}.MAT %loader matrice
+                    end
+                    id = 1;
+                    if any(MAT,'all') && contains(labeldata{2,1},'Ch')
+                        List = strvcat(DATA{id}.ZoneList); %liste des paires SD
+                        ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
+                        plotLst = DATA{id}.zone.plotLst;
+                        labelzone =  DATA{id}.zone.label;
+                        labelzone = strrep(labelzone, '_', ' ');
+                        plotconnectogram(fileorderconnectogram,MAT(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
+                        fig = gcf;
+                        %pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
+                        colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                        savefig([savepath fac 'effect_' labeldata{2,1} '_' sign{s} 'ConnectG1G2']);
+                        exportgraphics(gcf,[savepath fac 'effect_' labeldata{2,1} '_' sign{s} 'ConnectG1G2.png'])
+                        close
+                    elseif any(MAT,'all') && contains(labeldata{2,1},'roi')
+                        plotLst = DATA(2,:);
+                        labelzone =  DATA(1,:);
+                        plotconnectogramroi(fileorderconnectogram,MAT,labelzone,plotLst)
+                        fig = gcf;
+                        %pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
+                        if contains(labeldata{2,1},'roiR')
+                            colorbar('Position',[0.75 0.334 0.02 0.4],'FontSize',12)
+                        else
+                            colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                        end
+                        savefig([savepath fac 'effect_' labeldata{2,1} '_' sign{s} 'ConnectG1G2']);
+                        exportgraphics(gcf,[savepath fac 'effect_' labeldata{2,1} '_' sign{s} 'ConnectG1G2.png'])
+                        close
+                    else
+                    end
+                    clear MAT
+                end
+
+            elseif strcmp(fac,'SES')
+                idx = find(sig);
+                Vslopes = zeros(1,length(sig));
+                Vslopes(idx) = slopes.(fac);
+                MATslopes = zeros(length(MATmeandiff));
+                x = 1;
+                for c = 1:length(MATmeandiff)
+                    for cc =(c + 1):length(MATmeandiff)
+                        MATslopes(c,cc) = Vslopes(x); %Mettre les  p sous forme de matrice
+                        x = x + 1;
+                    end
+                end
+
+                MATslopes(length(MATslopes),length(MATslopes)) = 0; %Mettre la dernière donnée sur la diagonale à 0
+                MATslopes = MATslopes + triu(MATslopes,1)'; %rendre la matrice symétrique
+                clear c cc x
+
+                if any(MATslopes,'all') && contains(labeldata{2,1},'Ch')
+                    id = 1;
+                    List = strvcat(DATA{id}.ZoneList); %liste des paires SD
+                    ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
+                    plotLst = DATA{id}.zone.plotLst;
+                    labelzone =  DATA{id}.zone.label;
+                    labelzone = strrep(labelzone, '_', ' ');
+                    plotconnectogram(fileorderconnectogram,MATslopes(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
+                    fig = gcf;
+                    %pbaspect([1 1 1])
+                    fig.WindowState = 'maximized';
+                    colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                    savefig([savepath fac 'effect_' labeldata{2,1} '_Connect']);
+                    exportgraphics(gcf,[savepath fac 'effect_' labeldata{2,1} '_Connect.png'])
+                    close
+                elseif any(MATslopes,'all') && contains(labeldata{2,1},'roi')
+                    plotLst = DATA(2,:);
+                    labelzone =  DATA(1,:);
+                    plotconnectogramroi(fileorderconnectogram,MATslopes,labelzone,plotLst)
+                    fig = gcf;
+                    %pbaspect([1 1 1])
+                    fig.WindowState = 'maximized';
+                    if contains(labeldata{2,1},'roiR')
+                        colorbar('Position',[0.75 0.334 0.02 0.4],'FontSize',12)
+                    else
+                        colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                    end
+                    savefig([savepath fac 'effect_' labeldata{2,1} '_Connect']);
+                    exportgraphics(gcf,[savepath fac 'effect_' labeldata{2,1} '_Connect.png'])
+                    close
+                else
+                end
+                clear MATslopes Vslopes
+
+            elseif strcmp(fac,'GroupSES')
+                for g = 1:size(slopes.(fac),1)
+                    idx = find(sig);
+                    Vslopes = zeros(1,length(sig));
+                    Vslopes(idx) = slopes.(fac)(g,:);
+                    MATslopes = zeros(length(MATmeandiff));
+                    x = 1;
+                    for c = 1:length(MATmeandiff)
+                        for cc =(c + 1):length(MATmeandiff)
+                            MATslopes(c,cc) = Vslopes(x); %Mettre les  p sous forme de matrice
+                            x = x + 1;
+                        end
+                    end
+
+                    MATslopes(length(MATslopes),length(MATslopes)) = 0; %Mettre la dernière donnée sur la diagonale à 0
+                    MATslopes = MATslopes + triu(MATslopes,1)'; %rendre la matrice symétrique
+                    clear c cc x
+
+                    if any(MATslopes,'all') && contains(labeldata{2,1},'Ch')
+                        id = 1;
+                        List = strvcat(DATA{id}.ZoneList); %liste des paires SD
+                        ML = DATA{id}.zone.ml; %Loader S/D/ROI/Gr
+                        plotLst = DATA{id}.zone.plotLst;
+                        labelzone =  DATA{id}.zone.label;
+                        labelzone = strrep(labelzone, '_', ' ');
+                        plotconnectogram(fileorderconnectogram,MATslopes(varargin{1,1},varargin{1,1}),List,labelzone,plotLst,ML)
+                        fig = gcf;
+                        %pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
+                        colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                        savefig([savepath fac 'effect_' labeldata{2,1} '_ConnectG' num2str(g)]);
+                        exportgraphics(gcf,[savepath fac 'effect_' labeldata{2,1} '_ConnectG' num2str(g) '.png'])
+                        close
+                    elseif any(MATslopes,'all') && contains(labeldata{2,1},'roi')
+                        plotLst = DATA(2,:);
+                        labelzone =  DATA(1,:);
+                        plotconnectogramroi(fileorderconnectogram,MATslopes,labelzone,plotLst)
+                        fig = gcf;
+                        %pbaspect([1 1 1])
+                        fig.WindowState = 'maximized';
+                        if contains(labeldata{2,1},'roiR')
+                            colorbar('Position',[0.75 0.334 0.02 0.4],'FontSize',12)
+                        else
+                            colorbar('Position',[0.663 0.334 0.02 0.4],'FontSize',12)
+                        end
+                        savefig([savepath fac 'effect_' labeldata{2,1} '_ConnectG' num2str(g)]);
+                        exportgraphics(gcf,[savepath fac 'effect_' labeldata{2,1} '_ConnectG' num2str(g) '.png'])
+                        close
+                    else
+                    end
+                    clear MATslopes Vslopes
+                end
+            end
+        end
+    end
+end
+end
