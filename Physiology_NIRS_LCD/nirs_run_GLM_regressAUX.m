@@ -62,24 +62,23 @@ if ~isfield(NIRS.Dt,'AUX') %verify if theres an AUX
     error('No auxiliary attached to the NIRS file %s', (job.NIRSmat{1}))
 end
 
-%for iAUX = 1:numel(NIRS.Dt.AUX) %Find the filtered AUX
 listAUX = {NIRS.Dt.AUX.label};
 if sum(contains(listAUX, 'fil'))>1
-%     [indx, tf] = listdlg('PromptString',{'Multiple filtered AUX in the NIRSmat file.',...
-%         'Select which one you want to regress.',''},'SelectionMode','single','ListString',listAUX(1,contains(listAUX, 'fil')));
-    indx = 2; %à retirer!
+    [indx, tf] = listdlg('PromptString',{'Multiple filtered AUX in the NIRSmat file.',...
+        'Select which one you want to regress.',''},'SelectionMode','single','ListString',listAUX(1,contains(listAUX, 'fil')));
+%     indx = 2; %select second AUX (filcorr in my case)
     usedAUX = find(contains(listAUX, 'fil'));
     usedAUX = usedAUX(indx);
-%     if ~any(tf)
-%         fprint('No AUX selected, participant will be skipped')
-%         return
-%     end
+    if ~any(tf)
+        fprintf('No AUX selected, participant will be skipped')
+        return
+    end
 elseif sum(contains(listAUX, 'fil'))
     usedAUX = find(contains(listAUX, 'fil'));
 else
     error('No filtered AUX make sure to run filterAUX before this script')
 end
-%end
+
 
 if ~(contains(NIRS.Dt.AUX(usedAUX).label,'AUX') || contains(NIRS.Dt.AUX(usedAUX).label,'EEG'))
     error('The selected file is not an AUX/EEG file')
@@ -137,26 +136,26 @@ for f = 1:size(rDtp,1) %for each block
             end
             if sum(ind_dur_ch([mrks],2))/size(noise,1) > nbtimeminimum %if the sum of the total noise > threshold -> exclude channel
                 badchY(Chan)=0;
-                percent = sum(ind_dur_ch([mrks],2))/size(noise,1)*100;
-                disp(['Channel ' num2str(Chan) 'excluded for being ' percent '% noisy'])
+%                 percent = sum(ind_dur_ch([mrks],2))/size(noise,1)*100;
+%                 fprintf('Channel %.f excluded for being %.1f%% noisy\n', Chan, percent)
             end
         end
     end
     
     % for NIRS bad channels, replace the data with NaN values
-    idbad = find(badch==0|badchY==0); %remove exclude channel from regressor
+    idbad = find(badch==0|badchY==0); %remove excluded channel from regressor
     if ~isempty(idbad)
-        nirsdata(:,idbad) = nan; %set bad channels as NaN values
-        disp(['Channels ' num2str(idbad') ' are excluded from the regression and are set as NaN'])
+%        nirsdata(:,idbad) = nan; %set bad channels as NaN values
+       fprintf('Bad channels: %s\n', num2str(idbad'))
     end
     
-    % verification of minimum number of channels
-    currentNchan = size(nirsdata(1,1:NC/2),2);
-    if currentNchan < nbchminimum*NC/2
-        fprintf('Not enough valid channels (%d HbO channels) to continue with the AUX regression.\nBlock %s is skipped.\n',...
-            currentNchan,f);
-        continue
-    end
+%     % verification of minimum number of channels
+%     currentNchan = size(nirsdata(1,1:NC/2),2);
+%     if currentNchan < nbchminimum*NC/2
+%         fprintf('Not enough valid channels (%d HbO channels) to continue with the AUX regression.\nBlock %s is skipped.\n',...
+%             currentNchan,f);
+%         continue
+%     end
     
     % load auxiliaries (regressors)
     try
@@ -194,7 +193,7 @@ for f = 1:size(rDtp,1) %for each block
     %%REGRESSION (R2 statistic, F-statistic, p-value, error variance estimate)
     goodCH = [];
     for CH = 1:NC %for each channel
-        if ~any(CH==idbad) %check if good
+%         if ~any(CH==idbad) %check if good
             goodCH = [goodCH CH];
             [tmp.b,tmp.bint,~,~,tmp.stats] = regress(nirsdata(:,CH),cov.data); %regress NIRS data with all AUX
             tmpbeta(:,CH) = tmp.b;
@@ -204,15 +203,15 @@ for f = 1:size(rDtp,1) %for each block
             tmpFstat(CH) = tmp.stats(2);
             tmpSig(CH) = tmp.stats(3);
             tmpErrorVariance(CH) = tmp.stats(4);
-        else
-            tmpbeta(:,CH) = NaN([size(cov.data,2) 1]);
-            tmpbetainterval{CH} = NaN;
-            %tmpresiduals{CH} = NaN;
-            tmpR2(CH) = NaN;
-            tmpFstat(CH) = NaN;
-            tmpSig(CH) = NaN;
-            tmpErrorVariance(CH) = NaN;
-        end
+%         else
+%             tmpbeta(:,CH) = NaN([size(cov.data,2) 1]);
+%             tmpbetainterval{CH} = NaN;
+%             %tmpresiduals{CH} = NaN;
+%             tmpR2(CH) = NaN;
+%             tmpFstat(CH) = NaN;
+%             tmpSig(CH) = NaN;
+%             tmpErrorVariance(CH) = NaN;
+%         end
     end
     
     %if the block is bad (no good channels), then skip to next one
@@ -261,7 +260,7 @@ for f = 1:size(rDtp,1) %for each block
     Prow = Prow + 1;
     clear tmp* cov.data goodCH nirsdata idbad
     
-    disp(['block ' num2str(f) ' done'] );
+    %disp(['block ' num2str(f) ' done'] );
 end
 
 %% figure of beta distribution
@@ -350,7 +349,7 @@ end
 
 %% save nirs mat and PARCOMP
 
-fprintf('Update NIRSmat COMPLETED ...%s\n*\n**\n***\n',job.NIRSmat{1})
+fprintf('AUX regression completed for %s\n',job.NIRSmat{1})
 save(job.NIRSmat{1},'NIRS');
 save(fullfile(nirsPATH,'SelectedFactors.mat'),'PARCOMP');
 
